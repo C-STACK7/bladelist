@@ -4,7 +4,6 @@
 #include <limits.h>
 #include <libbladeRF.h>
 
-//#include "conversions.h"
 
 static const struct option long_options[] = {
     { "device",     required_argument,  NULL,   'd' },
