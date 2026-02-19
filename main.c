@@ -4,7 +4,7 @@
 #include <limits.h>
 #include <libbladeRF.h>
 
-#include "conversions.h"
+//#include "conversions.h"
 
 static const struct option long_options[] = {
     { "device",     required_argument,  NULL,   'd' },
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'c':
-                count = str2uint(optarg, 1, UINT_MAX, &ok);
+                //count = str2uint(optarg, 1, UINT_MAX, &ok);
                 if (!ok) {
                     fprintf(stderr, "Invalid count: %s\n", optarg);
                     return -1;
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'w':
-                wait = str2uint(optarg, 1, 60 * 60 * 1000, &ok);
+                //wait = str2uint(optarg, 1, 60 * 60 * 1000, &ok);
                 if (!ok) {
                     fprintf(stderr, "Invalid wait period: %s\n", optarg);
                     return -1;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'v':
-                log_level = str2loglevel(optarg, &ok);
+                //og_level = str2loglevel(optarg, &ok);
                 if (!ok) {
                     fprintf(stderr, "Invalid log level: %s\n", optarg);
                     return -1;
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
                     bladerf_strerror(status));
             return EXIT_FAILURE;
         } else {
-            usleep(wait);
+            //usleep(wait);
             bladerf_close(dev);
             printf("Iteration %u complete.\n", i + 1);
         }
