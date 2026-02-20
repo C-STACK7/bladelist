@@ -1,112 +1,173 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <getopt.h>
-#include <limits.h>
+/*
+ * Example of how to open a device with the specified serial number
+ *
+ * This file is part of the bladeRF project:
+ *   http://www.github.com/nuand/bladeRF
+ *
+ * Copyright (C) 2014 Nuand LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#include <inttypes.h>
 #include <libbladeRF.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+//#include "example_common.h"
+
+/** [example_snippet] */
+struct bladerf *open_bladerf_from_serial(const char *serial)
+{
+    int status;
+    struct bladerf *dev;
+    struct bladerf_devinfo info;
+
+    /* Initialize all fields to "don't care" wildcard values.
+     *
+     * Immediately passing this to bladerf_open_with_devinfo() would cause
+     * libbladeRF to open any device on any available backend.
+     */
+
+    bladerf_init_devinfo(&info);
+    /* Specify the desired device's serial number, while leaving all other
+     * fields in the info structure wildcard values
+     */
+    strncpy(info.serial, serial, BLADERF_SERIAL_LENGTH - 1);
+    info.serial[BLADERF_SERIAL_LENGTH - 1] = '\0';
+
+    status = bladerf_open_with_devinfo(&dev, &info);
+    if (status == BLADERF_ERR_NODEV) {
+        printf("No devices available with serial=%s\n", serial);
+        return NULL;
+    } else if (status != 0) {
+        fprintf(stderr, "Failed to open device with serial=%s (%s)\n", serial,
+                bladerf_strerror(status));
+        return NULL;
+    } else {
+        return dev;
+    }
+
+}
 
 
-static const struct option long_options[] = {
-    { "device",     required_argument,  NULL,   'd' },
-    { "count",      required_argument,  NULL,   'c' },
-    { "wait",       required_argument,  NULL,   'w' },
-    { "reset",      no_argument,        NULL,   'r' },
-    { "no-reset",   no_argument,        NULL,   'n' },
-    { "help",       no_argument,        NULL,   'h' },
-    { NULL,         0,                  NULL,   0   },
-};
+
+
+/** [example_snippet] */
+
+static int print_device_state(struct bladerf *dev)
+{
+    int status;
+    uint64_t frequency;
+    unsigned int bandwidth;
+    struct bladerf_rational_rate rate;
+
+
+    const bladerf_channel rx_ch = BLADERF_CHANNEL_RX(0);
+    const bladerf_channel tx_ch = BLADERF_CHANNEL_TX(0);
+
+    status = bladerf_get_frequency(dev, rx_ch, &frequency);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX frequency: %" PRIu64 " Hz\n", frequency);
+
+    status = bladerf_get_frequency(dev, tx_ch, &frequency);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX frequency: %" PRIu64 " Hz\n", frequency);
+
+    status = bladerf_get_bandwidth(dev, rx_ch, &bandwidth);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX bandwidth: %u Hz\n", bandwidth);
+
+    status = bladerf_get_bandwidth(dev, tx_ch, &bandwidth);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX bandwidth: %u Hz\n", bandwidth);
+
+    status = bladerf_get_rational_sample_rate(dev, rx_ch, &rate);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
+           rate.integer, rate.num, rate.den);
+
+    status = bladerf_get_rational_sample_rate(dev, tx_ch, &rate);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
+           rate.integer, rate.num, rate.den);
+
+    return 0;
+}
+
+
+
 
 int main(int argc, char *argv[])
 {
-    int opt = 0;
-    int opt_ind = 0;
     int status = 0;
-    char *devstr = NULL;
     struct bladerf *dev;
-    bool reset_on_open = true;
-    unsigned int count = 1;
-    unsigned int wait = 250;
-    unsigned int i;
-    bool ok;
-    bladerf_log_level log_level = BLADERF_LOG_LEVEL_INFO;
+    struct bladerf_devinfo *devinfo;
 
-    opt = 0;
-
-    while (opt != -1) {
-        opt = getopt_long(argc, argv, "d:c:w:rnv:h", long_options, &opt_ind);
-
-        switch (opt) {
-            case 'd':
-                devstr = optarg;
-                break;
-
-            case 'c':
-                //count = str2uint(optarg, 1, UINT_MAX, &ok);
-                if (!ok) {
-                    fprintf(stderr, "Invalid count: %s\n", optarg);
-                    return -1;
-                }
-                break;
-
-            case 'w':
-                //wait = str2uint(optarg, 1, 60 * 60 * 1000, &ok);
-                if (!ok) {
-                    fprintf(stderr, "Invalid wait period: %s\n", optarg);
-                    return -1;
-                } else {
-                    wait *= 1000;
-                }
-                break;
-
-            case 'r':
-                reset_on_open = true;
-                break;
-
-            case 'n':
-                reset_on_open = false;
-                break;
-
-            case 'v':
-                //og_level = str2loglevel(optarg, &ok);
-                if (!ok) {
-                    fprintf(stderr, "Invalid log level: %s\n", optarg);
-                    return -1;
-                }
-                break;
-
-            case 'h':
-                printf("Usage: %s [options]\n", argv[0]);
-                printf("  -d, --device <str>    Specify device to open.\n");
-                printf("  -c, --count <n>       Number of times to open/close.\n");
-                printf("  -w, --wait <n>        Wait <n> ms before closing.\n");
-                printf("  -r, --reset           Enable USB reset on open.\n");
-                printf("  -n, --no-reset        Disable USB reset on open.\n");
-                printf("  -v, --verbosity <l>   Set libbladeRF verbosity level.\n");
-                printf("  -h, --help            Show this text.\n");
-                printf("\n");
-                return 0;
-
-            default:
-                break;
-        }
-    }
-
-    bladerf_log_set_verbosity(log_level);
-
-    bladerf_set_usb_reset_on_open(reset_on_open);
-
-    for (i = 0; i < count; i++) {
-        status = bladerf_open(&dev, devstr);
-        if (status != 0) {
-            fprintf(stderr, "Failed to open device: %s\n",
-                    bladerf_strerror(status));
-            return EXIT_FAILURE;
-        } else {
-            //usleep(wait);
-            bladerf_close(dev);
-            printf("Iteration %u complete.\n", i + 1);
-        }
+    int countdevices = 0;
+    countdevices = bladerf_get_device_list(&devinfo);
+    if(countdevices <= 0)
+        printf("no devices\n");
+    else{
+        printf("Devices bladerf %d\n", countdevices);
+        printf("Device 1 sn:%s, product: %s\n", devinfo[0].serial, devinfo[0].product);
+        bladerf_free_device_list(devinfo);
     }
 
 
-    return EXIT_SUCCESS;
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <serial #>\n", argv[0]);
+        return 1;
+    }
+
+    dev = open_bladerf_from_serial(argv[1]);
+    if (dev) {
+        printf("Opened device successfully!\n");
+        status = print_device_state(dev);
+    }
+
+    if (status != 0) {
+        fprintf(stderr, "Error: %s\n", bladerf_strerror(status));
+    }
+
+    if (dev) {
+        bladerf_close(dev);
+    }
+
+    return status;
 }
