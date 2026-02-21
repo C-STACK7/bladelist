@@ -25,111 +25,13 @@
  * THE SOFTWARE.
  */
 
-#include <inttypes.h>
-#include <libbladeRF.h>
+#define _CRT_SECURE_NO_WARNINGS 1
 #include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
-//#include "example_common.h"
-
-/** [example_snippet] */
-struct bladerf *open_bladerf_from_serial(const char *serial)
-{
-    int status;
-    struct bladerf *dev;
-    struct bladerf_devinfo info;
-
-    /* Initialize all fields to "don't care" wildcard values.
-     *
-     * Immediately passing this to bladerf_open_with_devinfo() would cause
-     * libbladeRF to open any device on any available backend.
-     */
-
-    bladerf_init_devinfo(&info);
-    /* Specify the desired device's serial number, while leaving all other
-     * fields in the info structure wildcard values
-     */
-    strncpy(info.serial, serial, BLADERF_SERIAL_LENGTH - 1);
-    info.serial[BLADERF_SERIAL_LENGTH - 1] = '\0';
-
-    status = bladerf_open_with_devinfo(&dev, &info);
-    if (status == BLADERF_ERR_NODEV) {
-        printf("No devices available with serial=%s\n", serial);
-        return NULL;
-    } else if (status != 0) {
-        fprintf(stderr, "Failed to open device with serial=%s (%s)\n", serial,
-                bladerf_strerror(status));
-        return NULL;
-    } else {
-        return dev;
-    }
-
-}
-
-
-
-
-/** [example_snippet] */
-
-static int print_device_state(struct bladerf *dev)
-{
-    int status;
-    uint64_t frequency;
-    unsigned int bandwidth;
-    struct bladerf_rational_rate rate;
-
-
-    const bladerf_channel rx_ch = BLADERF_CHANNEL_RX(0);
-    const bladerf_channel tx_ch = BLADERF_CHANNEL_TX(0);
-
-    status = bladerf_get_frequency(dev, rx_ch, &frequency);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  RX frequency: %" PRIu64 " Hz\n", frequency);
-
-    status = bladerf_get_frequency(dev, tx_ch, &frequency);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  TX frequency: %" PRIu64 " Hz\n", frequency);
-
-    status = bladerf_get_bandwidth(dev, rx_ch, &bandwidth);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  RX bandwidth: %u Hz\n", bandwidth);
-
-    status = bladerf_get_bandwidth(dev, tx_ch, &bandwidth);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  TX bandwidth: %u Hz\n", bandwidth);
-
-    status = bladerf_get_rational_sample_rate(dev, rx_ch, &rate);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  RX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
-           rate.integer, rate.num, rate.den);
-
-    status = bladerf_get_rational_sample_rate(dev, tx_ch, &rate);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  TX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
-           rate.integer, rate.num, rate.den);
-
-    return 0;
-}
-
+#include <inttypes.h>
+#include <libbladeRF.h>
 
 
 
@@ -138,36 +40,64 @@ int main(int argc, char *argv[])
     int status = 0;
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
+    struct bladerf_serial *devserial;
 
-    int countdevices = 0;
-    countdevices = bladerf_get_device_list(&devinfo);
-    if(countdevices <= 0)
+    int setdevnum = -1;
+    int devcount = 0;
+
+    devcount = bladerf_get_device_list(&devinfo);
+    if(devcount <= 0)
         printf("no devices\n");
     else{
-        printf("Devices bladerf %d\n", countdevices);
-        printf("Device 1 sn:%s, product: %s\n", devinfo[0].serial, devinfo[0].product);
+        // Вывод информации о подключенных устройствах к  usb шине
+        printf("Search all devices BLADERF USB connect: %d\n", devcount);
+        for (unsigned char i = 0; i < devcount; i++){
+            printf("Device %d sn:%s, product : %s,\tusb_bus:%d, usb_addr: %d, instance: %d\n",
+                   i,
+                   devinfo[i].serial,
+                   devinfo[i].product,
+                   devinfo[i].usb_bus,
+                   devinfo[i].usb_addr
+                );
+        }
+
+        //вывод информации о свободных устройствах
+        printf("Please set num or free devices USB connect:");
+        scanf("%d", &setdevnum);
+
+        /*
+         *открытие свободного выбранного устройства
+         */
+
+        char serial[BLADERF_SERIAL_LENGTH -1 + 9] = ("*:serial=");
+        strcat(serial, devinfo[setdevnum].serial);
+
+        int status =  bladerf_open(&dev, serial);
+        if (status != 0) {
+            printf("Unable to open device: %s\n",
+                    bladerf_strerror(status));
+            return status;
+        }
+        else
+            printf("Device to open\n");
+
+/*
+        status = bladerf_open_with_devinfo(&dev, &bladerf_serial);
+        if (status == BLADERF_ERR_NODEV) {
+            printf("No devices available with serial=%s\n", serial);
+            return NULL;
+        } else if (status != 0) {
+            fprintf(stderr, "Failed to open device with serial=%s (%s)\n", serial,
+                    bladerf_strerror(status));
+            return NULL;
+        } else {
+            return dev;
+        }
+*/
+        bladerf_close(dev);
         bladerf_free_device_list(devinfo);
     }
 
-
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <serial #>\n", argv[0]);
-        return 1;
-    }
-
-    dev = open_bladerf_from_serial(argv[1]);
-    if (dev) {
-        printf("Opened device successfully!\n");
-        status = print_device_state(dev);
-    }
-
-    if (status != 0) {
-        fprintf(stderr, "Error: %s\n", bladerf_strerror(status));
-    }
-
-    if (dev) {
-        bladerf_close(dev);
-    }
 
     return status;
 }

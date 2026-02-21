@@ -6,4 +6,7 @@ CONFIG -= qt
 SOURCES += \
         main.c \
 
+QMAKE_CFLAGS += -Wno-deprecated-declarations
+QMAKE_CXXFLAGS += -Wno-deprecated-declarations
+
 LIBS += -lbladeRF
