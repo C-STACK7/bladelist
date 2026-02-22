@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
     struct bladerf_serial *devserial;
+    struct bladerf_backendinfo devbackinfo;
 
     int setdevnum = -1;
     int devcount = 0;
@@ -52,18 +53,34 @@ int main(int argc, char *argv[])
         // Вывод информации о подключенных устройствах к  usb шине
         printf("Search all devices BLADERF USB connect: %d\n", devcount);
         for (unsigned char i = 0; i < devcount; i++){
-            printf("Device %d sn:%s, product : %s,\tusb_bus:%d, usb_addr: %d, instance: %d\n",
+            printf("Device %d "
+                   "sn:%s, "
+                   "product : %s,\t"
+                   "usb_bus:%d, "
+                   "usb_addr: %d, "
+                   "instance: %d,"
+                   "\n",
                    i,
                    devinfo[i].serial,
                    devinfo[i].product,
                    devinfo[i].usb_bus,
-                   devinfo[i].usb_addr
+                   devinfo[i].usb_addr,
+                   devinfo[i].instance
                 );
         }
 
-        //вывод информации о свободных устройствах
-        printf("Please set num or free devices USB connect:");
+
+
+
+        //выбор номера устройства
+        enternumdev:
+        printf("\nPlease set num or free devices USB connect:");
         scanf("%d", &setdevnum);
+        if (setdevnum > (devcount-1) || setdevnum < 0){
+            printf("Error enter device number!\n");
+            goto enternumdev;
+        }
+
 
         /*
          *открытие свободного выбранного устройства
@@ -72,30 +89,28 @@ int main(int argc, char *argv[])
         char serial[BLADERF_SERIAL_LENGTH -1 + 9] = ("*:serial=");
         strcat(serial, devinfo[setdevnum].serial);
 
-        int status =  bladerf_open(&dev, serial);
-        if (status != 0) {
-            printf("Unable to open device: %s\n",
+        //освобождение списка
+        bladerf_free_device_list(devinfo);
+
+        //открытие устройства по серийному номеру
+        bladerf_set_usb_reset_on_open(true);
+        bladerf_open(&dev, serial);
+        int status = bladerf_get_devinfo(dev,devinfo);
+
+        if (status ==BLADERF_ERR_NOT_INIT) {
+            printf("Open device: %s\n",
                     bladerf_strerror(status));
             return status;
         }
-        else
-            printf("Device to open\n");
-
-/*
-        status = bladerf_open_with_devinfo(&dev, &bladerf_serial);
-        if (status == BLADERF_ERR_NODEV) {
-            printf("No devices available with serial=%s\n", serial);
-            return NULL;
-        } else if (status != 0) {
-            fprintf(stderr, "Failed to open device with serial=%s (%s)\n", serial,
-                    bladerf_strerror(status));
-            return NULL;
-        } else {
-            return dev;
+        else{
+            printf("Open device: %s, %s\n",
+                   devinfo->serial,
+                   bladerf_strerror(status));
         }
-*/
-        bladerf_close(dev);
+
         bladerf_free_device_list(devinfo);
+        bladerf_close(dev);
+        printf("\nDevice close!!!\n");
     }
 
 
