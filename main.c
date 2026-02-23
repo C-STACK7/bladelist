@@ -40,9 +40,7 @@ int main(int argc, char *argv[])
     int status = 0;
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
-    struct bladerf_serial *devserial;
-    struct bladerf_backendinfo devbackinfo;
-
+sdfsdafds
     int setdevnum = -1;
     int devcount = 0;
 
