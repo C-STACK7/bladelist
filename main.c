@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     int status = 0;
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
-sdfsdafds
+
     int setdevnum = -1;
     int devcount = 0;
 
