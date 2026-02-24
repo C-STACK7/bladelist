@@ -1,28 +1,6 @@
 /*
  * Example of how to open a device with the specified serial number
  *
- * This file is part of the bladeRF project:
- *   http://www.github.com/nuand/bladeRF
- *
- * Copyright (C) 2014 Nuand LLC
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
  */
 
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -33,7 +11,7 @@
 #include <inttypes.h>
 #include <libbladeRF.h>
 
-
+static int print_device_state(struct bladerf *);
 
 int main(int argc, char *argv[])
 {
@@ -67,9 +45,6 @@ int main(int argc, char *argv[])
                 );
         }
 
-
-
-
         //выбор номера устройства
         enternumdev:
         printf("\nPlease set num or free devices USB connect:");
@@ -78,7 +53,6 @@ int main(int argc, char *argv[])
             printf("Error enter device number!\n");
             goto enternumdev;
         }
-
 
         /*
          *открытие свободного выбранного устройства
@@ -94,16 +68,20 @@ int main(int argc, char *argv[])
         bladerf_set_usb_reset_on_open(true);
         bladerf_open(&dev, serial);
         int status = bladerf_get_devinfo(dev,devinfo);
-
         if (status ==BLADERF_ERR_NOT_INIT) {
-            printf("Open device: %s\n",
-                    bladerf_strerror(status));
+            printf("Open device: %s\n",bladerf_strerror(status));
             return status;
         }
         else{
             printf("Open device: %s, %s\n",
                    devinfo->serial,
                    bladerf_strerror(status));
+            //печать информации об устройстве.
+            status = print_device_state(dev);
+            if (status != 0) {
+                fprintf(stderr, "Error: %s\n", bladerf_strerror(status));
+            }
+
         }
 
         bladerf_free_device_list(devinfo);
@@ -113,4 +91,72 @@ int main(int argc, char *argv[])
 
 
     return status;
+}
+
+
+int setmenu(void)
+{
+    int selectmenu = 0;
+    printf("\t\t**Software control bladeRF 2.0**\n"
+           "1 - print hardware parametrs\n"
+           "2 - print software parametrs\n"
+           "3 - print power parameters\n"
+           "4 - print radio parameters\n");
+    scanf("%d", &selectmenu);
+}
+static int print_device_state(struct bladerf *dev)
+{
+    int status;
+    uint64_t frequency;
+    unsigned int bandwidth;
+    struct bladerf_rational_rate rate;
+
+    const bladerf_channel rx_ch = BLADERF_CHANNEL_RX(0);
+    const bladerf_channel tx_ch = BLADERF_CHANNEL_TX(0);
+
+    status = bladerf_get_frequency(dev, rx_ch, &frequency);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX frequency: %" PRIu64 " Hz\n", frequency);
+
+    status = bladerf_get_frequency(dev, tx_ch, &frequency);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX frequency: %" PRIu64 " Hz\n", frequency);
+
+    status = bladerf_get_bandwidth(dev, rx_ch, &bandwidth);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX bandwidth: %u Hz\n", bandwidth);
+
+    status = bladerf_get_bandwidth(dev, tx_ch, &bandwidth);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX bandwidth: %u Hz\n", bandwidth);
+
+    status = bladerf_get_rational_sample_rate(dev, rx_ch, &rate);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
+           rate.integer, rate.num, rate.den);
+
+    status = bladerf_get_rational_sample_rate(dev, tx_ch, &rate);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
+           rate.integer, rate.num, rate.den);
+
+    return 0;
 }
