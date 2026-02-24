@@ -103,6 +103,7 @@ int setmenu(void)
            "3 - print power parameters\n"
            "4 - print radio parameters\n");
     scanf("%d", &selectmenu);
+    return selectmenu;
 }
 static int print_device_state(struct bladerf *dev)
 {
