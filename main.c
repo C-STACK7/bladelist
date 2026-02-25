@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include <libbladeRF.h>
 
+int setmenu(void);
 static int print_device_state(struct bladerf *);
 
 int main(int argc, char *argv[])
@@ -24,34 +25,35 @@ int main(int argc, char *argv[])
 
     devcount = bladerf_get_device_list(&devinfo);
     if(devcount <= 0)
-        printf("no devices\n");
+        printf("no connect devices\n\n");
     else{
-        // Вывод информации о подключенных устройствах к  usb шине
-        printf("Search all devices BLADERF USB connect: %d\n", devcount);
-        for (unsigned char i = 0; i < devcount; i++){
-            printf("Device %d "
-                   "sn:%s, "
-                   "product : %s,\t"
-                   "usb_bus:%d, "
-                   "usb_addr: %d, "
-                   "instance: %d,"
-                   "\n",
-                   i,
-                   devinfo[i].serial,
-                   devinfo[i].product,
-                   devinfo[i].usb_bus,
-                   devinfo[i].usb_addr,
-                   devinfo[i].instance
-                );
-        }
 
         //выбор номера устройства
-        enternumdev:
-        printf("\nPlease set num or free devices USB connect:");
-        scanf("%d", &setdevnum);
-        if (setdevnum > (devcount-1) || setdevnum < 0){
-            printf("Error enter device number!\n");
-            goto enternumdev;
+
+        while ((setdevnum > (devcount-1) || setdevnum < 0)) {
+
+            // Вывод информации о подключенных устройствах к  usb шине
+            printf("Search all devices BLADERF USB connect: %d\n", devcount);
+            for (unsigned char i = 0; i < devcount; i++){
+                printf("Device %d "
+                       "sn:%s, "
+                       "product : %s,\t"
+                       "usb_bus:%d, "
+                       "usb_addr: %d, "
+                       "instance: %d,"
+                       "\n",
+                       i,
+                       devinfo[i].serial,
+                       devinfo[i].product,
+                       devinfo[i].usb_bus,
+                       devinfo[i].usb_addr,
+                       devinfo[i].instance
+                       );
+            }
+
+            printf("\nPlease set DEVICE N or free devices USB connect:");
+            scanf("%d", &setdevnum);
+            if (setdevnum > (devcount-1) || setdevnum < 0) printf("***Error enter device number!***\n\n");
         }
 
         /*
@@ -76,8 +78,12 @@ int main(int argc, char *argv[])
             printf("Open device: %s, %s\n",
                    devinfo->serial,
                    bladerf_strerror(status));
-            //печать информации об устройстве.
-            status = print_device_state(dev);
+            //вывод основного меню
+            while (setmenu() != 0 ) {
+
+            }
+
+
             if (status != 0) {
                 fprintf(stderr, "Error: %s\n", bladerf_strerror(status));
             }
@@ -93,18 +99,137 @@ int main(int argc, char *argv[])
     return status;
 }
 
+/*
+ * меню приложения
+ */
 
 int setmenu(void)
 {
-    int selectmenu = 0;
+    int setmenu = 0;
+    int setsubmenu = 0;
+
     printf("\t\t**Software control bladeRF 2.0**\n"
+<<<<<<< HEAD
            "1 - print hardware parametrs\n"
            "2 - print software parametrs\n"
            "3 - print power parameters\n"
            "4 - print radio parameters\n");
     scanf("%d", &selectmenu);
     return selectmenu;
+=======
+           "1 - info\n"
+           "2 - set parametrs\n"
+           "3 - read radiodata\n"
+           "4 - transmit data\n"
+           "5 - help\n"
+           "9 - exit\n\n");
+    printf("Enter: ");
+    scanf("%d", &setmenu);
+
+        switch (setmenu) {
+        case 1:
+            /*
+             * menu 1 - info
+             */
+            printf("\t\t**submenu info**\n"
+                "1 - info interface\n"
+                "2 - info power\n"
+                "3 - info radio\n"
+                "0 - return menu\n\n");
+
+            scanf("%d", &setsubmenu);
+
+            break;
+
+        case 2:
+            /*
+             * menu 2 - set parametrs
+             */
+
+            printf("\t\t**submenu set parametrs**\n"
+                   "1 - set freq\n"
+                   "2 - set samplerate\n"
+                   "3 - set bandwidth\n"
+                   "4 - set AGC"
+                   "5 - set FIR"
+                   "0 - return menu\n\n");
+
+            scanf("%d", &setsubmenu);
+            break;
+
+        case 3:
+            /*
+             * submenu 3 - read radiodata
+             */
+
+            printf("\t\t**submenu read radiodata**\n"
+                   "1 - read metadata\n"
+                   "2 - read sync\n"
+                   "0 - return menu\n\n");
+            scanf("%d", &setsubmenu);
+
+            break;
+
+        case 4:
+            /*
+             * submenu 4 - transmit data
+             */
+
+            printf("\t\t**submenu transmit data**\n"
+                   "1 - transmit metadata\n"
+                   "2 - transmit sync\n"
+                   "0 - return menu\n\n");
+            scanf("%d", &setsubmenu);
+
+            break;
+
+        case 5:
+            /*
+             * submenu 1 - info
+             */
+
+            break;
+
+        case 6:
+            /*
+             * submenu 1 - info
+             */
+
+            break;
+
+        case 7:
+            /*
+             * submenu 1 - info
+             */
+
+            break;
+
+        case 8:
+            /*
+             * submenu 1 - info
+             */
+
+            break;
+
+        case 9:
+            /*
+             * submenu 1 - info
+             */
+
+            break;
+
+        default:{
+            printf("Error enter menu!!!\n"
+                   "Please enter num:\n\n");
+            setmenu = -1;
+            setsubmenu = -1;
+        }
+            break;
+    }
+    return setmenu;
+>>>>>>> f874339 (add menu & submenu bladerf control)
 }
+
 static int print_device_state(struct bladerf *dev)
 {
     int status;
