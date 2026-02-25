@@ -109,14 +109,6 @@ int setmenu(void)
     int setsubmenu = 0;
 
     printf("\t\t**Software control bladeRF 2.0**\n"
-<<<<<<< HEAD
-           "1 - print hardware parametrs\n"
-           "2 - print software parametrs\n"
-           "3 - print power parameters\n"
-           "4 - print radio parameters\n");
-    scanf("%d", &selectmenu);
-    return selectmenu;
-=======
            "1 - info\n"
            "2 - set parametrs\n"
            "3 - read radiodata\n"
@@ -126,108 +118,107 @@ int setmenu(void)
     printf("Enter: ");
     scanf("%d", &setmenu);
 
-        switch (setmenu) {
-        case 1:
-            /*
+    switch (setmenu) {
+    case 1:
+        /*
              * menu 1 - info
              */
-            printf("\t\t**submenu info**\n"
-                "1 - info interface\n"
-                "2 - info power\n"
-                "3 - info radio\n"
-                "0 - return menu\n\n");
+        printf("\t\t**submenu info**\n"
+               "1 - info interface\n"
+               "2 - info power\n"
+               "3 - info radio\n"
+               "0 - return menu\n\n");
 
-            scanf("%d", &setsubmenu);
+        scanf("%d", &setsubmenu);
 
-            break;
+        break;
 
-        case 2:
-            /*
+    case 2:
+        /*
              * menu 2 - set parametrs
              */
 
-            printf("\t\t**submenu set parametrs**\n"
-                   "1 - set freq\n"
-                   "2 - set samplerate\n"
-                   "3 - set bandwidth\n"
-                   "4 - set AGC"
-                   "5 - set FIR"
-                   "0 - return menu\n\n");
+        printf("\t\t**submenu set parametrs**\n"
+               "1 - set freq\n"
+               "2 - set samplerate\n"
+               "3 - set bandwidth\n"
+               "4 - set AGC"
+               "5 - set FIR"
+               "0 - return menu\n\n");
 
-            scanf("%d", &setsubmenu);
-            break;
+        scanf("%d", &setsubmenu);
+        break;
 
-        case 3:
-            /*
+    case 3:
+        /*
              * submenu 3 - read radiodata
              */
 
-            printf("\t\t**submenu read radiodata**\n"
-                   "1 - read metadata\n"
-                   "2 - read sync\n"
-                   "0 - return menu\n\n");
-            scanf("%d", &setsubmenu);
+        printf("\t\t**submenu read radiodata**\n"
+               "1 - read metadata\n"
+               "2 - read sync\n"
+               "0 - return menu\n\n");
+        scanf("%d", &setsubmenu);
 
-            break;
+        break;
 
-        case 4:
-            /*
+    case 4:
+        /*
              * submenu 4 - transmit data
              */
 
-            printf("\t\t**submenu transmit data**\n"
-                   "1 - transmit metadata\n"
-                   "2 - transmit sync\n"
-                   "0 - return menu\n\n");
-            scanf("%d", &setsubmenu);
+        printf("\t\t**submenu transmit data**\n"
+               "1 - transmit metadata\n"
+               "2 - transmit sync\n"
+               "0 - return menu\n\n");
+        scanf("%d", &setsubmenu);
 
-            break;
+        break;
 
-        case 5:
-            /*
+    case 5:
+        /*
              * submenu 1 - info
              */
 
-            break;
+        break;
 
-        case 6:
-            /*
+    case 6:
+        /*
              * submenu 1 - info
              */
 
-            break;
+        break;
 
-        case 7:
-            /*
+    case 7:
+        /*
              * submenu 1 - info
              */
 
-            break;
+        break;
 
-        case 8:
-            /*
+    case 8:
+        /*
              * submenu 1 - info
              */
 
-            break;
+        break;
 
-        case 9:
-            /*
+    case 9:
+        /*
              * submenu 1 - info
              */
 
-            break;
+        break;
 
-        default:{
-            printf("Error enter menu!!!\n"
-                   "Please enter num:\n\n");
-            setmenu = -1;
-            setsubmenu = -1;
-        }
-            break;
+    default:{
+        printf("Error enter menu!!!\n"
+               "Please enter num:\n\n");
+        setmenu = -1;
+        setsubmenu = -1;
+    }
+    break;
     }
     return setmenu;
->>>>>>> f874339 (add menu & submenu bladerf control)
 }
 
 static int print_device_state(struct bladerf *dev)
