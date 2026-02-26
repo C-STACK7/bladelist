@@ -31,6 +31,13 @@ int main(int argc, char *argv[])
     int status = 0;
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
+    struct bladerf_version *devversion;
+
+    bladerf_fpga_size fpga_size = 0;
+
+    size_t *fpga_bit_stream = 0;
+    uint32_t *flash_size;
+    bool *is_guess;
 
     int setdevnum = -1;
     int devcount = 0;
@@ -106,10 +113,44 @@ int main(int argc, char *argv[])
                                "2 - info power\n"
                                "3 - info radio\n"
                                "0 - return menu\n\n");
+
                         scanf("%d", &setmenu);
+
+                        switch (setmenu) {
+                        case 1:
+                            printf("\n"
+                                   "Manufacturer:\t%s \n"
+                                   "Product :\t%s\n"
+                                   "Serial:\t\t%s \n"
+                                   "usb_bus:\t%d \n"
+                                   "usb_addr:\t%d \n"
+                                   "instance:\t%d\n",
+                                   devinfo->manufacturer,
+                                   devinfo->product,
+                                   devinfo->serial,
+                                   devinfo->usb_bus,
+                                   devinfo->usb_addr,
+                                   devinfo->instance
+                                   );
+                            if(!bladerf_get_fpga_size(dev, &fpga_size))  printf("FPGA size:\t%d KLE\n", fpga_size);
+                            printf(bladerf_is_fpga_configured (dev) ? "FPGA configured yes\n" : "FPGA configured no\n");
+*****************************if (!bladerf_fpga_version (dev, devversion))
+
+                            printf("\n");
+                            break;
+                        case 2:
+
+                            break;
+
+
+                        default:
+                            printf("\n Error enter num menu\n\n");
+                            break;
+                        }
+
                     }
 
-                    break;
+
 
                 case 2:
                     /*
