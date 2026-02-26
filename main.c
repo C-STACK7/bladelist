@@ -11,8 +11,20 @@
 #include <inttypes.h>
 #include <libbladeRF.h>
 
-int setmenu(void);
-static int print_device_state(struct bladerf *);
+
+static int print_device_interface(struct bladerf *);
+static int print_device_power(struct bladerf *);
+static int print_device_radio(struct bladerf *);
+
+static int set_device_freq(struct bladerf *);
+static int set_device_samplerate(struct bladerf *);
+static int set_device_bandwidth(struct bladerf *);
+static int set_device_agc(struct bladerf *);
+static int set_device_fir(struct bladerf *);
+
+
+
+
 
 int main(int argc, char *argv[])
 {
@@ -78,17 +90,127 @@ int main(int argc, char *argv[])
             printf("Open device: %s, %s\n",
                    devinfo->serial,
                    bladerf_strerror(status));
-            //вывод основного меню
-            while (setmenu() != 0 ) {
 
+//вывод основного меню
+            int setmenu = 0;
+             while (setmenu != 9) {
+                //menu level 2
+                switch (setmenu) {
+                case 1:
+                    /*
+                    * menu 1 - info
+                    */
+                    while(setmenu !=0){
+                        printf("\t\t**submenu info**\n"
+                               "1 - info interface\n"
+                               "2 - info power\n"
+                               "3 - info radio\n"
+                               "0 - return menu\n\n");
+                        scanf("%d", &setmenu);
+                    }
+
+                    break;
+
+                case 2:
+                    /*
+                    * menu 2 - set parametrs
+                    */
+                    while (setmenu != 0) {
+                        printf("\t\t**submenu set parametrs**\n"
+                               "1 - set freq\n"
+                               "2 - set samplerate\n"
+                               "3 - set bandwidth\n"
+                               "4 - set AGC"
+                               "5 - set FIR"
+                               "0 - return menu\n\n");
+
+                        scanf("%d", &setmenu);
+
+                    }
+
+                    break;
+
+                case 3:
+                    /*
+                    * submenu 3 - read radiodata
+                    */
+                    while(setmenu != 0){
+                        printf("\t\t**submenu read radiodata**\n"
+                               "1 - read metadata\n"
+                               "2 - read sync\n"
+                               "0 - return menu\n\n");
+                        scanf("%d", &setmenu);
+                    }
+                    break;
+
+                case 4:
+                    /*
+                    * submenu 4 - transmit data
+                    */
+                    while(setmenu != 0){
+                        printf("\t\t**submenu transmit data**\n"
+                               "1 - transmit metadata\n"
+                               "2 - transmit sync\n"
+                               "0 - return menu\n\n");
+                        scanf("%d", &setmenu);
+                    }
+
+                    break;
+
+                    case 5:
+                        /*
+                        * submenu 1 - info
+                        */
+
+                        break;
+
+                    case 6:
+                        /*
+                        * submenu 1 - info
+                        */
+
+                        break;
+
+                    case 7:
+                        /*
+                        * submenu 1 - info
+                        */
+
+                        break;
+
+                    case 8:
+                        /*
+                        * submenu 1 - info
+                        */
+
+                        break;
+
+                    case 9:
+                        /*
+                        * submenu 1 - info
+                        */
+
+                        break;
+
+                    default:{
+                        //menu level 1
+                        printf("\t\t**Software control bladeRF 2.0**\n"
+                               "1 - info\n"
+                               "2 - set parametrs\n"
+                               "3 - read radiodata\n"
+                               "4 - transmit data\n"
+                               "5 - help\n"
+                               "9 - exit\n\n");
+                        scanf("%d", &setmenu);
+                    }
+                    break;
             }
-
-
+             }
             if (status != 0) {
                 fprintf(stderr, "Error: %s\n", bladerf_strerror(status));
             }
 
-        }
+    }
 
         bladerf_free_device_list(devinfo);
         bladerf_close(dev);
@@ -103,125 +225,65 @@ int main(int argc, char *argv[])
  * меню приложения
  */
 
-int setmenu(void)
+
+static int print_device_radio(struct bladerf *dev)
 {
-    int setmenu = 0;
-    int setsubmenu = 0;
+    int status;
+    uint64_t frequency;
+    unsigned int bandwidth;
+    struct bladerf_rational_rate rate;
 
-    printf("\t\t**Software control bladeRF 2.0**\n"
-           "1 - info\n"
-           "2 - set parametrs\n"
-           "3 - read radiodata\n"
-           "4 - transmit data\n"
-           "5 - help\n"
-           "9 - exit\n\n");
-    printf("Enter: ");
-    scanf("%d", &setmenu);
+    const bladerf_channel rx_ch = BLADERF_CHANNEL_RX(0);
+    const bladerf_channel tx_ch = BLADERF_CHANNEL_TX(0);
 
-    switch (setmenu) {
-    case 1:
-        /*
-             * menu 1 - info
-             */
-        printf("\t\t**submenu info**\n"
-               "1 - info interface\n"
-               "2 - info power\n"
-               "3 - info radio\n"
-               "0 - return menu\n\n");
-
-        scanf("%d", &setsubmenu);
-
-        break;
-
-    case 2:
-        /*
-             * menu 2 - set parametrs
-             */
-
-        printf("\t\t**submenu set parametrs**\n"
-               "1 - set freq\n"
-               "2 - set samplerate\n"
-               "3 - set bandwidth\n"
-               "4 - set AGC"
-               "5 - set FIR"
-               "0 - return menu\n\n");
-
-        scanf("%d", &setsubmenu);
-        break;
-
-    case 3:
-        /*
-             * submenu 3 - read radiodata
-             */
-
-        printf("\t\t**submenu read radiodata**\n"
-               "1 - read metadata\n"
-               "2 - read sync\n"
-               "0 - return menu\n\n");
-        scanf("%d", &setsubmenu);
-
-        break;
-
-    case 4:
-        /*
-             * submenu 4 - transmit data
-             */
-
-        printf("\t\t**submenu transmit data**\n"
-               "1 - transmit metadata\n"
-               "2 - transmit sync\n"
-               "0 - return menu\n\n");
-        scanf("%d", &setsubmenu);
-
-        break;
-
-    case 5:
-        /*
-             * submenu 1 - info
-             */
-
-        break;
-
-    case 6:
-        /*
-             * submenu 1 - info
-             */
-
-        break;
-
-    case 7:
-        /*
-             * submenu 1 - info
-             */
-
-        break;
-
-    case 8:
-        /*
-             * submenu 1 - info
-             */
-
-        break;
-
-    case 9:
-        /*
-             * submenu 1 - info
-             */
-
-        break;
-
-    default:{
-        printf("Error enter menu!!!\n"
-               "Please enter num:\n\n");
-        setmenu = -1;
-        setsubmenu = -1;
+    status = bladerf_get_frequency(dev, rx_ch, &frequency);
+    if (status != 0) {
+        return status;
     }
-    break;
+
+    printf("  RX frequency: %" PRIu64 " Hz\n", frequency);
+
+    status = bladerf_get_frequency(dev, tx_ch, &frequency);
+    if (status != 0) {
+        return status;
     }
-    return setmenu;
+
+    printf("  TX frequency: %" PRIu64 " Hz\n", frequency);
+
+    status = bladerf_get_bandwidth(dev, rx_ch, &bandwidth);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX bandwidth: %u Hz\n", bandwidth);
+
+    status = bladerf_get_bandwidth(dev, tx_ch, &bandwidth);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX bandwidth: %u Hz\n", bandwidth);
+
+    status = bladerf_get_rational_sample_rate(dev, rx_ch, &rate);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  RX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
+           rate.integer, rate.num, rate.den);
+
+    status = bladerf_get_rational_sample_rate(dev, tx_ch, &rate);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("  TX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
+           rate.integer, rate.num, rate.den);
+
+    return 0;
 }
 
-static int print_device_state(struct bladerf *dev)
+static int print_device_interface(struct bladerf *dev)
 {
     int status;
     uint64_t frequency;
