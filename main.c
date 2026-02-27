@@ -55,9 +55,10 @@ int main(int argc, char *argv[])
     float pmiccurrent = 0.0;    /**< Load current (float) */
     uint16_t pmiccal = 0.0;
 
+    bladerf_set_usb_reset_on_open(true);
     devcount = bladerf_get_device_list(&devinfo);
     if(devcount <= 0)
-        printf("no connect devices\n\n");
+        printf("no connected devices\n\n");
     else{
 
         //выбор номера устройства
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
         bladerf_free_device_list(devinfo);
 
         //открытие устройства по серийному номеру
-        bladerf_set_usb_reset_on_open(true);
+
 
         status = bladerf_open(&dev, serial);
         if (status < 0) {
@@ -152,6 +153,7 @@ int main(int argc, char *argv[])
                                    devinfo->instance
                                    );
                             }
+
                             printf("Board name:\t%s\n", bladerf_get_board_name(dev));
 
                             if(bladerf_get_fpga_size(dev, &fpga_size))
@@ -197,8 +199,6 @@ int main(int argc, char *argv[])
                                 printf("Device speed:\tUNKNOWN\n");
                                 break;
                             }
-
-                            bladerf_free_device_list(devinfo);
 
                             printf("\n");
                         }
