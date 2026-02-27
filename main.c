@@ -100,16 +100,16 @@ int main(int argc, char *argv[])
 
         //открытие устройства по серийному номеру
         bladerf_set_usb_reset_on_open(true);
-        bladerf_open(&dev, serial);
-        int status = bladerf_get_devinfo(dev,devinfo);
-        if (status ==BLADERF_ERR_NOT_INIT) {
-            printf("Open device: %s\n",bladerf_strerror(status));
+
+        status = bladerf_open(&dev, serial);
+        if (status < 0) {
+            printf("Not open serial device: %s\n",bladerf_strerror(status));
             return status;
         }
         else{
-            printf("Open device: %s, %s\n",
-                   devinfo->serial,
-                   bladerf_strerror(status));
+            printf("Open serial device success!!!\n");
+
+
 
 //вывод основного меню
             int setmenu = 0;
@@ -131,6 +131,12 @@ int main(int argc, char *argv[])
 
                         switch (setmenu) {
                         case 1:{
+                            status = bladerf_get_devinfo(dev,devinfo);
+                            if (status < 0) {
+                                printf("Info get device: %s\n",bladerf_strerror(status));
+                                return status;
+                            }
+                            else{
                             printf("\n"
                                    "Manufacturer:\t%s \n"
                                    "Product :\t%s\n"
@@ -145,7 +151,7 @@ int main(int argc, char *argv[])
                                    devinfo->usb_addr,
                                    devinfo->instance
                                    );
-
+                            }
                             printf("Board name:\t%s\n", bladerf_get_board_name(dev));
 
                             if(bladerf_get_fpga_size(dev, &fpga_size))
@@ -192,6 +198,8 @@ int main(int argc, char *argv[])
                                 break;
                             }
 
+                            bladerf_free_device_list(devinfo);
+
                             printf("\n");
                         }
                             break;
@@ -201,13 +209,14 @@ int main(int argc, char *argv[])
                           *  info power
                           */
                         case 2:{
-
-                            if(bladerf_get_rfic_temperature(dev, &rfic_temperature))
+                            status = bladerf_get_rfic_temperature(dev, &rfic_temperature);
+                            if(status < 0)
                                 printf("Rfic temperature:\tERROR READ %s\n",bladerf_strerror(status));
                             else
                                 printf("Rfic temperature:\t%.2f °C\n", rfic_temperature);
 
-                            if(bladerf_get_power_source(dev, &power_source))
+                            status = bladerf_get_power_source(dev, &power_source);
+                            if(status < 0)
                                 printf("Power source:\tERROR READ %s\n",bladerf_strerror(status));
                             else{
                                 if (power_source == BLADERF_UNKNOWN) printf("Power source:\t\tUNKNOWN\n");
@@ -215,7 +224,8 @@ int main(int argc, char *argv[])
                                 if (power_source == BLADERF_PS_USB_VBUS) printf("Power source:\t\tUSB VBUS\n");
                             }
 
-                            if(bladerf_get_clock_select(dev, &clock_select))
+                            status = bladerf_get_clock_select(dev, &clock_select);
+                            if(status < 0)
                                 printf("Clock select:\tERROR READ %s\n",bladerf_strerror(status));
                             else{
                                 if (clock_select == CLOCK_SELECT_ONBOARD) printf("Clock select::\t\tONBOARD\n");
