@@ -10,6 +10,7 @@
 
 #include <inttypes.h>
 #include <libbladeRF.h>
+#include <bladeRF2.h>
 
 
 static int print_device_interface(struct bladerf *);
@@ -31,16 +32,28 @@ int main(int argc, char *argv[])
     int status = 0;
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
-    struct bladerf_version *devversion;
-
-    bladerf_fpga_size fpga_size = 0;
-
-    size_t *fpga_bit_stream = 0;
-    uint32_t *flash_size;
-    bool *is_guess;
-
+    struct bladerf_version devversion;
     int setdevnum = -1;
     int devcount = 0;
+
+
+    bladerf_fpga_source devfpgasrc;
+    bladerf_fpga_size fpga_size = 0;
+    uint32_t flash_size = 1;
+    bool is_guess;
+
+
+
+    float rfic_temperature = 0.0;
+    bladerf_power_sources power_source;
+    bladerf_clock_select clock_select;
+    int devspeed = -1;
+    uint16_t pmicconf = 0;       /**< Configuration register (uint16_t) */
+    float pmicvshunt = 0.0;     /**< Shunt voltage (float) */
+    float pmicvbus = 0.0;       /**< Bus voltage (float) */
+    float pmicpower = 0.0;      /**< Load power (float) */
+    float pmiccurrent = 0.0;    /**< Load current (float) */
+    uint16_t pmiccal = 0.0;
 
     devcount = bladerf_get_device_list(&devinfo);
     if(devcount <= 0)
@@ -117,7 +130,7 @@ int main(int argc, char *argv[])
                         scanf("%d", &setmenu);
 
                         switch (setmenu) {
-                        case 1:
+                        case 1:{
                             printf("\n"
                                    "Manufacturer:\t%s \n"
                                    "Product :\t%s\n"
@@ -132,14 +145,126 @@ int main(int argc, char *argv[])
                                    devinfo->usb_addr,
                                    devinfo->instance
                                    );
-                            if(!bladerf_get_fpga_size(dev, &fpga_size))  printf("FPGA size:\t%d KLE\n", fpga_size);
+
+                            printf("Board name:\t%s\n", bladerf_get_board_name(dev));
+
+                            if(bladerf_get_fpga_size(dev, &fpga_size))
+                                printf("%s\n",bladerf_strerror(status));
+                            else
+                                printf("FPGA size:\t%d KLE\n", fpga_size);
+
                             printf(bladerf_is_fpga_configured (dev) ? "FPGA configured yes\n" : "FPGA configured no\n");
-*****************************if (!bladerf_fpga_version (dev, devversion))
+
+                            if (bladerf_fpga_version (dev, &devversion))
+                                printf("%s\n",bladerf_strerror(status));
+                            else {
+                                printf("FPGA version:\t%d.%d.%d\n",
+                                       devversion.major,
+                                       devversion.minor,
+                                       devversion.patch
+                                       );
+                            }
+                            if(bladerf_get_fpga_source(dev, &devfpgasrc))
+                                printf("FPGA source:\tUNKNOWN %s\n",bladerf_strerror(status));
+                            else {
+                                if(devfpgasrc == 1)
+                                    printf("FPGA source:\tFLASH \n");
+                                else
+                                    printf("FPGA source:\tHOST \n");
+                            }
+
+                            if(bladerf_get_flash_size(dev, &flash_size, &is_guess))
+                                printf("Flash size:\tUNKNOWN %s\n",bladerf_strerror(status));
+                            else {
+                                    printf("Flash size:\t%d kB\n", flash_size/1024);
+                            }
+
+                            devspeed = bladerf_device_speed(dev);
+                            switch (devspeed) {
+                            case 1:
+                                printf("Device speed:\tHIGH\n");
+                                break;
+                            case 2:
+                                printf("Device speed:\tSUPER\n");
+                                break;
+                            default:
+                                printf("Device speed:\tUNKNOWN\n");
+                                break;
+                            }
 
                             printf("\n");
+                        }
                             break;
-                        case 2:
 
+
+                         /*
+                          *  info power
+                          */
+                        case 2:{
+
+                            if(bladerf_get_rfic_temperature(dev, &rfic_temperature))
+                                printf("Rfic temperature:\tERROR READ %s\n",bladerf_strerror(status));
+                            else
+                                printf("Rfic temperature:\t%.2f °C\n", rfic_temperature);
+
+                            if(bladerf_get_power_source(dev, &power_source))
+                                printf("Power source:\tERROR READ %s\n",bladerf_strerror(status));
+                            else{
+                                if (power_source == BLADERF_UNKNOWN) printf("Power source:\t\tUNKNOWN\n");
+                                if (power_source == BLADERF_PS_DC) printf("Power source:\t\tDC\n");
+                                if (power_source == BLADERF_PS_USB_VBUS) printf("Power source:\t\tUSB VBUS\n");
+                            }
+
+                            if(bladerf_get_clock_select(dev, &clock_select))
+                                printf("Clock select:\tERROR READ %s\n",bladerf_strerror(status));
+                            else{
+                                if (clock_select == CLOCK_SELECT_ONBOARD) printf("Clock select::\t\tONBOARD\n");
+                                if (clock_select == CLOCK_SELECT_EXTERNAL) printf("Clock select::\t\tEXTERNAL\n");
+                            }
+
+                            /**< Configuration register (uint16_t) */
+                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_CONFIGURATION, &pmicconf);
+                            if(status < 0)
+                                printf("PMIC config :\tERROR READ %s\n",bladerf_strerror(status));
+                            else
+                                printf("PMIC config :\t%#X\n",pmicconf);
+
+                            /**< Shunt voltage (float) */
+                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_VOLTAGE_SHUNT, &pmicvshunt);
+                            if(status < 0)
+                                printf("PMIC voltage shunt :\tERROR READ %s\n",bladerf_strerror(status));
+                            else
+                                printf("PMIC voltage shunt :\t%f V\n",pmicvshunt);
+
+                            /**< Bus voltage (float) */
+                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_VOLTAGE_BUS, &pmicvbus);
+                            if(status < 0)
+                                printf("PMIC voltage BUS :\tERROR READ %s\n",bladerf_strerror(status));
+                            else
+                                printf("PMIC voltage BUS :\t%.2f V\n",pmicvbus);
+
+                            /**< Load power (float) */
+                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_POWER, &pmicpower);
+                            if(status < 0)
+                                printf("PMIC power :\t\tERROR READ %s\n",bladerf_strerror(status));
+                            else
+                                printf("PMIC power :\t\t%.2f W\n",pmicpower);
+
+                            /**< Load current (float) */
+                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_CURRENT, &pmiccurrent);
+                            if(status < 0)
+                                printf("PMIC current :\t\tERROR READ %s\n",bladerf_strerror(status));
+                            else
+                                printf("PMIC current :\t\t%.2f A\n",pmiccurrent);
+
+                            /**< Calibration (uint16_t) */
+                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_CALIBRATION, &pmiccal);
+                            if(status < 0)
+                                printf("PMIC cal :\tERROR READ %s\n",bladerf_strerror(status));
+                            else
+                                printf("PMIC cal :\t%u\n", pmiccal);
+
+                        }
                             break;
 
 
@@ -198,40 +323,7 @@ int main(int argc, char *argv[])
 
                     break;
 
-                    case 5:
-                        /*
-                        * submenu 1 - info
-                        */
 
-                        break;
-
-                    case 6:
-                        /*
-                        * submenu 1 - info
-                        */
-
-                        break;
-
-                    case 7:
-                        /*
-                        * submenu 1 - info
-                        */
-
-                        break;
-
-                    case 8:
-                        /*
-                        * submenu 1 - info
-                        */
-
-                        break;
-
-                    case 9:
-                        /*
-                        * submenu 1 - info
-                        */
-
-                        break;
 
                     default:{
                         //menu level 1
