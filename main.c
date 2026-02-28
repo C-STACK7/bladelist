@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
     int devcount = 0;
 
 
+    uint16_t dac_trim;
     bladerf_fpga_source devfpgasrc;
     bladerf_fpga_size fpga_size = 0;
     uint32_t flash_size = 1;
@@ -130,7 +131,11 @@ int main(int argc, char *argv[])
 
                         scanf("%d", &setmenu);
 
+
                         switch (setmenu) {
+                            /*
+                             * info interface
+                             */
                         case 1:{
                             status = bladerf_get_devinfo(dev,devinfo);
                             if (status < 0) {
@@ -155,6 +160,14 @@ int main(int argc, char *argv[])
                             }
 
                             printf("Board name:\t%s\n", bladerf_get_board_name(dev));
+
+                            status = bladerf_get_vctcxo_trim(dev, &dac_trim);
+                            if (status < 0) {
+                                 printf("%s\n",bladerf_strerror(status));
+                            }
+                            else
+                                printf("VCTCXO DAC cal:\t0x%.4X\n", dac_trim);
+
 
                             if(bladerf_get_fpga_size(dev, &fpga_size))
                                 printf("%s\n",bladerf_strerror(status));
@@ -181,11 +194,15 @@ int main(int argc, char *argv[])
                                     printf("FPGA source:\tHOST \n");
                             }
 
-                            if(bladerf_get_flash_size(dev, &flash_size, &is_guess))
-                                printf("Flash size:\tUNKNOWN %s\n",bladerf_strerror(status));
-                            else {
-                                    printf("Flash size:\t%d kB\n", flash_size/1024);
+                            status = bladerf_get_flash_size(dev, &flash_size, &is_guess);
+                            if (flash_size == 0 || status < 0)
+                                    printf("Flash size:\tUNKNOWN %s\n",bladerf_strerror(status));
+                            else{
+                                    printf("Flash size:\t%u Mbit", (flash_size >> 17));
+                                    printf( is_guess ? " (assumed)\n" : "\n");
                             }
+
+
 
                             devspeed = bladerf_device_speed(dev);
                             switch (devspeed) {
@@ -203,11 +220,9 @@ int main(int argc, char *argv[])
                             printf("\n");
                         }
                             break;
-
-
-                         /*
-                          *  info power
-                          */
+                             /*
+                              *  info power
+                              */
                         case 2:{
                             status = bladerf_get_rfic_temperature(dev, &rfic_temperature);
                             if(status < 0)
@@ -276,6 +291,9 @@ int main(int argc, char *argv[])
 
                         }
                             break;
+                            /*
+                             * info radio
+                             */
 
 
                         default:
