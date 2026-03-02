@@ -30,6 +30,9 @@ static char const *_rfic_tx_portstr(uint32_t);
 static char const *_rfic_rx_portstr(uint32_t);
 static char const *_rfswitch_portstr(uint32_t);
 
+const char *channel2str(bladerf_channel);
+char const *_txfir_to_str(bladerf_rfic_txfir);
+char const *_rxfir_to_str(bladerf_rfic_rxfir);
 
 
 int main(int argc, char *argv[])
@@ -63,8 +66,13 @@ int main(int argc, char *argv[])
 
 
     bladerf_rf_switch_config config;
-    bladerf_tuning_mode mode;
-    bladerf_sampling samplingmode;
+    bladerf_tuning_mode modetuning;
+    bladerf_gain_mode modegain= BLADERF_GAIN_DEFAULT;
+
+    const char *mux_str;
+    bladerf_rx_mux mux_setting;
+    bladerf_rfic_rxfir rxfir;
+    bladerf_rfic_txfir txfir;
 
     bladerf_set_usb_reset_on_open(true);
     devcount = bladerf_get_device_list(&devinfo);
@@ -306,14 +314,77 @@ int main(int argc, char *argv[])
                              */
                         case 3:{
 
-                            status = bladerf_get_tuning_mode(dev, &mode);
+                            status = bladerf_get_tuning_mode(dev, &modetuning);
                             if (status < 0) printf("No get tuning mode: %s\n",bladerf_strerror(status));
                             else
-                                printf("Tuning Mode: %s\n", mode == BLADERF_TUNING_MODE_HOST ? "Host" : "FPGA");
+                                printf("Tuning Mode: %s\n", modetuning == BLADERF_TUNING_MODE_HOST ? "Host" : "FPGA");
+
+                            printf("AGC:\n");
+
+                            status = bladerf_get_gain_mode(dev, BLADERF_CHANNEL_RX(0), &modegain);
+                            if (status < 0)
+                                printf("No get mode AGC: %s\n",bladerf_strerror(status));
+                            else
+                                printf("  %s AGC: %-10s\n", channel2str(BLADERF_CHANNEL_RX(0)),
+                                       modegain == BLADERF_GAIN_MANUAL ? "Disabled" : "Enabled");
+
+                            status = bladerf_get_gain_mode(dev, BLADERF_CHANNEL_RX(1), &modegain);
+                            if (status < 0)
+                                printf("No get mode AGC: %s\n",bladerf_strerror(status));
+                            else
+                                printf("  %s AGC: %-10s\n", channel2str(BLADERF_CHANNEL_RX(1)),
+                                       modegain == BLADERF_GAIN_MANUAL ? "Disabled" : "Enabled");
+                            printf("\n");
+
+                            status = bladerf_get_rx_mux(dev, &mux_setting);
+                            if (status < 0) {
+                                printf("RX mux: %s\n", bladerf_strerror(status));
+                            }
+
+                            switch (mux_setting) {
+                            case BLADERF_RX_MUX_BASEBAND:
+                                mux_str = "BASEBAND - Baseband samples";
+                                break;
+                            case BLADERF_RX_MUX_12BIT_COUNTER:
+                                mux_str = "12BIT_COUNTER - 12-bit Up-Count I, Down-Count Q";
+                                break;
+                            case BLADERF_RX_MUX_32BIT_COUNTER:
+                                mux_str = "32BIT_COUNTER - 32-bit Up-Counter";
+                                break;
+                            case BLADERF_RX_MUX_DIGITAL_LOOPBACK:
+                                mux_str =
+                                    "DIGITAL_LOOPBACK: Digital Loopback of TX->RX in the FPGA";
+                                break;
+                            default:
+                                mux_str = "Unknown";
+                            }
+
+                            printf("RX mux: %s\n", mux_str);
+
+                            printf("\n");
+
+                            status = bladerf_get_rfic_rx_fir(dev, &rxfir);
+                            if (status < 0)
+                                printf("RX FIR Filter: %s\n",bladerf_strerror(status));
+                            else {
+                                printf("RX FIR Filter: %s%s\n", _rxfir_to_str(rxfir),
+                                       (BLADERF_RFIC_RXFIR_DEFAULT == rxfir) ? " (default)" : "");
+                            }
+
+                            status = bladerf_get_rfic_tx_fir(dev, &txfir);
+                            if (status < 0) {
+                                printf("TX FIR Filter: %s\n",bladerf_strerror(status));
+                            }
+                            else {
+                                printf("TX FIR Filter: %s%s\n", _txfir_to_str(txfir),
+                                       (BLADERF_RFIC_TXFIR_DEFAULT == txfir) ? " (default)" : "");
+                            }
+
+                            printf("\n");
 
                             status = bladerf_get_rf_switch_config(dev, &config);
                             if (status < 0) {
-                                printf("No get rf switch config: %s\n",bladerf_strerror(status));
+                                printf("RF routing: %s\n",bladerf_strerror(status));
                             }
                             else{
                             printf("RF routing:\n");
@@ -331,12 +402,19 @@ int main(int argc, char *argv[])
                                    config.tx2_spdt_port, _rfswitch_portstr(config.tx2_spdt_port));
                             }
 
+                            printf("\n");
+
+                            printf("Frequency channel:\n");
                             status = print_device_radio(dev);
                             if (status < 0) {
                                 printf("No get radio parametrs: %s\n",bladerf_strerror(status));
                             }
 
                             printf("\n");
+
+
+                            printf("\n");
+
                         }
                         break;
                         default:
@@ -577,4 +655,111 @@ static char const *_rfswitch_portstr(uint32_t port)
     }
 
     return pstrs[port];
+}
+
+const char *channel2str(bladerf_channel ch)
+{
+    switch (ch) {
+    case BLADERF_CHANNEL_RX(0):
+        return "RX1";
+    case BLADERF_CHANNEL_TX(0):
+        return "TX1";
+    case BLADERF_CHANNEL_RX(1):
+        return "RX2";
+    case BLADERF_CHANNEL_TX(1):
+        return "TX2";
+    default:
+        return "Unknown";
+    }
+}
+
+/* filter */
+char const *_rxfir_to_str(bladerf_rfic_rxfir rxfir)
+{
+    switch (rxfir) {
+    case BLADERF_RFIC_RXFIR_BYPASS:
+        return "bypass";
+    case BLADERF_RFIC_RXFIR_CUSTOM:
+        return "custom";
+    case BLADERF_RFIC_RXFIR_DEC1:
+        return "normal";
+    case BLADERF_RFIC_RXFIR_DEC2:
+        return "2x decimation";
+    case BLADERF_RFIC_RXFIR_DEC4:
+        return "4x decimation";
+    }
+
+    return "unknown";
+}
+
+bladerf_rfic_rxfir _str_to_rxfir(char const *str, bool *ok)
+{
+    if (ok != NULL) {
+        *ok = true;
+    }
+
+    if (!strcasecmp(str, "default")) {
+        return BLADERF_RFIC_RXFIR_DEFAULT;
+    } else if (!strcasecmp(str, "bypass")) {
+        return BLADERF_RFIC_RXFIR_BYPASS;
+    } else if (!strcasecmp(str, "custom")) {
+        return BLADERF_RFIC_RXFIR_CUSTOM;
+    } else if (!strcasecmp(str, "normal")) {
+        return BLADERF_RFIC_RXFIR_DEC1;
+    } else if (!strcasecmp(str, "dec2")) {
+        return BLADERF_RFIC_RXFIR_DEC2;
+    } else if (!strcasecmp(str, "dec4")) {
+        return BLADERF_RFIC_RXFIR_DEC4;
+    } else {
+        if (ok != NULL) {
+            *ok = false;
+        }
+
+        return BLADERF_RFIC_RXFIR_DEFAULT;
+    }
+}
+
+char const *_txfir_to_str(bladerf_rfic_txfir txfir)
+{
+    switch (txfir) {
+    case BLADERF_RFIC_TXFIR_BYPASS:
+        return "bypass";
+    case BLADERF_RFIC_TXFIR_CUSTOM:
+        return "custom";
+    case BLADERF_RFIC_TXFIR_INT1:
+        return "normal";
+    case BLADERF_RFIC_TXFIR_INT2:
+        return "2x interpolation";
+    case BLADERF_RFIC_TXFIR_INT4:
+        return "4x interpolation";
+    }
+
+    return "unknown";
+}
+
+bladerf_rfic_txfir _str_to_txfir(char const *str, bool *ok)
+{
+    if (ok != NULL) {
+        *ok = true;
+    }
+
+    if (!strcasecmp(str, "default")) {
+        return BLADERF_RFIC_TXFIR_DEFAULT;
+    } else if (!strcasecmp(str, "bypass")) {
+        return BLADERF_RFIC_TXFIR_BYPASS;
+    } else if (!strcasecmp(str, "custom")) {
+        return BLADERF_RFIC_TXFIR_CUSTOM;
+    } else if (!strcasecmp(str, "normal")) {
+        return BLADERF_RFIC_TXFIR_INT1;
+    } else if (!strcasecmp(str, "int2")) {
+        return BLADERF_RFIC_TXFIR_INT2;
+    } else if (!strcasecmp(str, "int4")) {
+        return BLADERF_RFIC_TXFIR_INT4;
+    } else {
+        if (ok != NULL) {
+            *ok = false;
+        }
+
+        return BLADERF_RFIC_TXFIR_DEFAULT;
+    }
 }
