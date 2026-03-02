@@ -17,14 +17,7 @@
 
 
 static int print_device_interface(struct bladerf *);
-static int print_device_power(struct bladerf *);
 static int print_device_radio(struct bladerf *);
-
-static int set_device_freq(struct bladerf *);
-static int set_device_samplerate(struct bladerf *);
-static int set_device_bandwidth(struct bladerf *);
-static int set_device_agc(struct bladerf *);
-static int set_device_fir(struct bladerf *);
 
 static char const *_rfic_tx_portstr(uint32_t);
 static char const *_rfic_rx_portstr(uint32_t);
@@ -440,6 +433,22 @@ int main(int argc, char *argv[])
                                "0 - return menu\n\n");
 
                         scanf("%d", &setmenu);
+                        switch (setmenu) {
+                        case 1:{
+
+/*
+ *
+ *добавить функции установки параметров
+ *
+ */
+                        }
+                            break;
+
+
+                        default:
+                            printf("\n Error enter num menu\n\n");
+                            break;
+                        }
 
                     }
 
@@ -565,62 +574,6 @@ static int print_device_radio(struct bladerf *dev)
     return 0;
 }
 
-static int print_device_interface(struct bladerf *dev)
-{
-    int status;
-    uint64_t frequency;
-    unsigned int bandwidth;
-    struct bladerf_rational_rate rate;
-
-    const bladerf_channel rx_ch = BLADERF_CHANNEL_RX(0);
-    const bladerf_channel tx_ch = BLADERF_CHANNEL_TX(0);
-
-    status = bladerf_get_frequency(dev, rx_ch, &frequency);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  RX frequency: %" PRIu64 " Hz\n", frequency);
-
-    status = bladerf_get_frequency(dev, tx_ch, &frequency);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  TX frequency: %" PRIu64 " Hz\n", frequency);
-
-    status = bladerf_get_bandwidth(dev, rx_ch, &bandwidth);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  RX bandwidth: %u Hz\n", bandwidth);
-
-    status = bladerf_get_bandwidth(dev, tx_ch, &bandwidth);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  TX bandwidth: %u Hz\n", bandwidth);
-
-    status = bladerf_get_rational_sample_rate(dev, rx_ch, &rate);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  RX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
-           rate.integer, rate.num, rate.den);
-
-    status = bladerf_get_rational_sample_rate(dev, tx_ch, &rate);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  TX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
-           rate.integer, rate.num, rate.den);
-
-    return 0;
-}
 
 static char const *_rfic_rx_portstr(uint32_t port)
 {
