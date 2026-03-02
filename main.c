@@ -12,6 +12,9 @@
 #include <libbladeRF.h>
 #include <bladeRF2.h>
 
+#define ARRAY_SIZE(n) (sizeof(n) / sizeof(n[0]))
+
+
 
 static int print_device_interface(struct bladerf *);
 static int print_device_power(struct bladerf *);
@@ -23,7 +26,9 @@ static int set_device_bandwidth(struct bladerf *);
 static int set_device_agc(struct bladerf *);
 static int set_device_fir(struct bladerf *);
 
-
+static char const *_rfic_tx_portstr(uint32_t);
+static char const *_rfic_rx_portstr(uint32_t);
+static char const *_rfswitch_portstr(uint32_t);
 
 
 
@@ -55,6 +60,11 @@ int main(int argc, char *argv[])
     float pmicpower = 0.0;      /**< Load power (float) */
     float pmiccurrent = 0.0;    /**< Load current (float) */
     uint16_t pmiccal = 0.0;
+
+
+    bladerf_rf_switch_config config;
+    bladerf_tuning_mode mode;
+    bladerf_sampling samplingmode;
 
     bladerf_set_usb_reset_on_open(true);
     devcount = bladerf_get_device_list(&devinfo);
@@ -219,7 +229,7 @@ int main(int argc, char *argv[])
 
                             printf("\n");
                         }
-                            break;
+                        break;
                              /*
                               *  info power
                               */
@@ -290,12 +300,45 @@ int main(int argc, char *argv[])
                                 printf("PMIC cal :\t%u\n", pmiccal);
 
                         }
-                            break;
+                        break;
                             /*
                              * info radio
                              */
+                        case 3:{
 
+                            status = bladerf_get_tuning_mode(dev, &mode);
+                            if (status < 0) printf("No get tuning mode: %s\n",bladerf_strerror(status));
+                            else
+                                printf("Tuning Mode: %s\n", mode == BLADERF_TUNING_MODE_HOST ? "Host" : "FPGA");
 
+                            status = bladerf_get_rf_switch_config(dev, &config);
+                            if (status < 0) {
+                                printf("No get rf switch config: %s\n",bladerf_strerror(status));
+                            }
+                            else{
+                            printf("RF routing:\n");
+                            printf("RX1: RFIC 0x%x (%-7s) <= SW 0x%x (%-7s)\n",
+                                   config.rx1_rfic_port, _rfic_rx_portstr(config.rx1_rfic_port),
+                                   config.rx1_spdt_port, _rfswitch_portstr(config.rx1_spdt_port));
+                            printf("RX2: RFIC 0x%x (%-7s) <= SW 0x%x (%-7s)\n",
+                                   config.rx2_rfic_port, _rfic_rx_portstr(config.rx2_rfic_port),
+                                   config.rx2_spdt_port, _rfswitch_portstr(config.rx2_spdt_port));
+                            printf("TX1: RFIC 0x%x (%-7s) => SW 0x%x (%-7s)\n",
+                                   config.tx1_rfic_port, _rfic_tx_portstr(config.tx1_rfic_port),
+                                   config.tx1_spdt_port, _rfswitch_portstr(config.tx1_spdt_port));
+                            printf("TX2: RFIC 0x%x (%-7s) => SW 0x%x (%-7s)\n",
+                                   config.tx2_rfic_port, _rfic_tx_portstr(config.tx2_rfic_port),
+                                   config.tx2_spdt_port, _rfswitch_portstr(config.tx2_spdt_port));
+                            }
+
+                            status = print_device_radio(dev);
+                            if (status < 0) {
+                                printf("No get radio parametrs: %s\n",bladerf_strerror(status));
+                            }
+
+                            printf("\n");
+                        }
+                        break;
                         default:
                             printf("\n Error enter num menu\n\n");
                             break;
@@ -499,4 +542,39 @@ static int print_device_interface(struct bladerf *dev)
            rate.integer, rate.num, rate.den);
 
     return 0;
+}
+
+static char const *_rfic_rx_portstr(uint32_t port)
+{
+    const char *pstrs[] = { "A_BAL",  "B_BAL",   "C_BAL", "A_N", "A_P",
+                           "B_N",    "B_P",     "C_N",   "C_P", "TXMON1",
+                           "TXMON2", "TXMON12", NULL };
+
+    if (port > ARRAY_SIZE(pstrs)) {
+        return "N/A";
+    }
+
+    return pstrs[port];
+}
+
+static char const *_rfic_tx_portstr(uint32_t port)
+{
+    const char *pstrs[] = { "TXA", "TXB", NULL };
+
+    if (port > ARRAY_SIZE(pstrs)) {
+        return "N/A";
+    }
+
+    return pstrs[port];
+}
+
+static char const *_rfswitch_portstr(uint32_t port)
+{
+    const char *pstrs[] = { "OPEN", "RF2(A)", "RF3(B)", NULL };
+
+    if (port > ARRAY_SIZE(pstrs)) {
+        return "N/A";
+    }
+
+    return pstrs[port];
 }
