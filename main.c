@@ -16,9 +16,7 @@
 
 
 
-static int print_device_interface(struct bladerf *);
 static int print_device_radio(struct bladerf *);
-
 static char const *_rfic_tx_portstr(uint32_t);
 static char const *_rfic_rx_portstr(uint32_t);
 static char const *_rfswitch_portstr(uint32_t);
