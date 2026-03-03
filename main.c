@@ -526,14 +526,31 @@ int main(int argc, char *argv[])
                                         break;
                                     }
                                 }
-
+                                printf("\n");
+                            }
                             case 2:{
                                /*
                                 * "2 - set samplerate\n"
                                 */
-/*************************/
+                               while (setmenu != 0) {
+                                   printf("Set samplerate:\n"
+                                          "1 - RX samplerate\n"
+                                          "2 - TX samplerate\n"
+                                          "0 - exit\n"
+                                          "\n");
+                                   scanf("%d", &setmenu);
+                                   switch (setmenu) {
+                                   case 1:
+/**********/                      //"1 - RX samplerate\n"
+                                       break;
+                                   default:
+                                       printf("Error enter menu\n");
+                                       break;
+                                   }
+
+                               }
                             }
-                            }
+
                             break;
 
 
