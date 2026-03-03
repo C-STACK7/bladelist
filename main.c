@@ -32,6 +32,10 @@ int main(int argc, char *argv[])
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
     struct bladerf_version devversion;
+    bladerf_frequency freq;
+    bladerf_sample_rate samp;
+    bladerf_bandwidth bw;
+
     int setdevnum = -1;
     int devcount = 0;
 
@@ -42,7 +46,8 @@ int main(int argc, char *argv[])
     uint32_t flash_size = 1;
     bool is_guess;
 
-
+    bladerf_channel ch = BLADERF_CHANNEL_INVALID;
+    const struct bladerf_range *freqrange;
 
     float rfic_temperature = 0.0;
     bladerf_power_sources power_source;
@@ -431,15 +436,104 @@ int main(int argc, char *argv[])
                                "0 - return menu\n\n");
 
                         scanf("%d", &setmenu);
-                        switch (setmenu) {
-                        case 1:{
 
-/*
- *
- *добавить функции установки параметров
- *
- */
-                        }
+                        switch (setmenu) {
+                            case 1:{
+                                /*
+                                *"1 - set freq\n"
+                                */
+                                const char *freqwarning =
+                                    "For best results, it is not recommended to set both RX and TX to the\n"
+                                    "same frequency. Instead, consider offsetting them by at least 1 MHz\n"
+                                    "and mixing digitally.\n"
+                                    "\n"
+                                    "For the above reason, 'set frequency <value>` is deprecated and\n"
+                                    "scheduled for removal in future bladeRF-cli versions.\n"
+                                    "\n"
+                                    "Please use 'set frequency rx' and 'set frequency tx' to configure\n"
+                                    "channels individually.\n"
+                                    "\n";
+
+                                printf("%s\n", freqwarning);
+
+
+                                while (setmenu != 0) {
+                                    printf("1 - set frequency rx\n"
+                                           "2 - set frequency tx\n"
+                                           "0 - exit\n");
+                                    scanf("%d", &setmenu);
+
+                                    switch (setmenu) {
+                                    case 1:
+                                        /*"1 - set frequency rx\n"*/
+                                        status = bladerf_get_frequency_range(dev, ch, &freqrange);
+                                        if (status < 0)
+                                            printf("Frequency RX range: %s\n",bladerf_strerror(status));
+                                        else{
+                                            printf("Frequency RX range: %ldMhz - %ldMhz scale - %ld step - %f\n",
+                                                   freqrange->min/1000000,
+                                                   freqrange->max/1000000,
+                                                   freqrange->step,
+                                                   freqrange->scale
+                                                   );
+                                            printf("Frequency RX = ");
+                                            scanf("%ld", &freq);
+                                            ch = BLADERF_CHANNEL_RX(0);
+                                            status = bladerf_set_frequency(dev,ch,freq*1000000);
+                                            if (status < 0)
+                                                printf("Frequency RX set: %s\n",bladerf_strerror(status));
+                                            else{
+                                                status = bladerf_get_frequency(dev,ch,&freq);
+                                                if (status < 0)
+                                                    printf("Frequency RX set: %s\n",bladerf_strerror(status));
+                                                else
+                                                    printf("Frequency RX set: %ldMhz\n",freq/1000000);
+
+                                            }
+                                        }
+                                        break;
+                                    case 2:
+                                        /*"2 - set frequency tx\n"*/
+                                        status = bladerf_get_frequency_range(dev, ch, &freqrange);
+                                        if (status < 0)
+                                            printf("Frequency TX range: %s\n",bladerf_strerror(status));
+                                        else{
+                                            printf("Frequency TX range: %ldMhz - %ldMhz scale - %ld step - %f\n",
+                                                   freqrange->min/1000000,
+                                                   freqrange->max/1000000,
+                                                   freqrange->step,
+                                                   freqrange->scale
+                                                   );
+                                            printf("Frequency TX = ");
+                                            scanf("%ld", &freq);
+                                            ch = BLADERF_CHANNEL_RX(0);
+                                            status = bladerf_set_frequency(dev,ch,freq*1000000);
+                                            if (status < 0)
+                                                printf("Frequency TX set: %s\n",bladerf_strerror(status));
+                                            else{
+                                                status = bladerf_get_frequency(dev,ch,&freq);
+                                                if (status < 0)
+                                                    printf("Frequency TX set: %s\n",bladerf_strerror(status));
+                                                else
+                                                    printf("Frequency TX set: %ldMhz\n",freq/1000000);
+
+                                            }
+                                        }
+
+                                        break;
+                                    default:
+                                        printf("Error enter menu!!!\n");
+                                        break;
+                                    }
+                                }
+
+                            case 2:{
+                               /*
+                                * "2 - set samplerate\n"
+                                */
+/*************************/
+                            }
+                            }
                             break;
 
 
@@ -522,52 +616,97 @@ static int print_device_radio(struct bladerf *dev)
     unsigned int bandwidth;
     struct bladerf_rational_rate rate;
 
-    const bladerf_channel rx_ch = BLADERF_CHANNEL_RX(0);
-    const bladerf_channel tx_ch = BLADERF_CHANNEL_TX(0);
-
-    status = bladerf_get_frequency(dev, rx_ch, &frequency);
-    if (status != 0) {
+    status = bladerf_get_frequency(dev, BLADERF_CHANNEL_RX(0), &frequency);
+    if (status < 0) {
         return status;
     }
+    else
+        printf("RX(0),  frequency: %lu Hz\t", frequency);
 
-    printf("  RX frequency: %" PRIu64 " Hz\n", frequency);
-
-    status = bladerf_get_frequency(dev, tx_ch, &frequency);
-    if (status != 0) {
+    status = bladerf_get_bandwidth(dev, BLADERF_CHANNEL_RX(0), &bandwidth);
+    if (status <  0) {
         return status;
     }
+    else
+        printf("BW: %u Hz,\t", bandwidth);
 
-    printf("  TX frequency: %" PRIu64 " Hz\n", frequency);
-
-    status = bladerf_get_bandwidth(dev, rx_ch, &bandwidth);
-    if (status != 0) {
+    status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_RX(0), &rate);
+    if (status < 0) {
         return status;
     }
-
-    printf("  RX bandwidth: %u Hz\n", bandwidth);
-
-    status = bladerf_get_bandwidth(dev, tx_ch, &bandwidth);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  TX bandwidth: %u Hz\n", bandwidth);
-
-    status = bladerf_get_rational_sample_rate(dev, rx_ch, &rate);
-    if (status != 0) {
-        return status;
-    }
-
-    printf("  RX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
+    else
+    printf("sample rate: %ld Hz, %ld/%ld, sps\n",
            rate.integer, rate.num, rate.den);
 
-    status = bladerf_get_rational_sample_rate(dev, tx_ch, &rate);
-    if (status != 0) {
+
+    status = bladerf_get_frequency(dev, BLADERF_CHANNEL_RX(1), &frequency);
+    if (status < 0) {
         return status;
     }
+    else
+        printf("RX(1),  frequency: %lu Hz\t", frequency);
 
-    printf("  TX sample rate: %" PRIu64 " %" PRIu64 "/%" PRIu64 " sps\n",
-           rate.integer, rate.num, rate.den);
+    status = bladerf_get_bandwidth(dev, BLADERF_CHANNEL_RX(1), &bandwidth);
+    if (status <  0) {
+        return status;
+    }
+    else
+        printf("BW: %u Hz,\t", bandwidth);
+
+    status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_RX(1), &rate);
+    if (status < 0) {
+        return status;
+    }
+    else
+        printf("sample rate: %ld Hz, %ld/%ld, sps\n",
+               rate.integer, rate.num, rate.den);
+
+
+
+    status = bladerf_get_frequency(dev, BLADERF_CHANNEL_TX(0), &frequency);
+    if (status < 0) {
+        return status;
+    }
+    else
+        printf("TX(0),  frequency: %lu Hz\t", frequency);
+
+    status = bladerf_get_bandwidth(dev, BLADERF_CHANNEL_TX(0), &bandwidth);
+    if (status <  0) {
+        return status;
+    }
+    else
+        printf("BW: %u Hz,\t", bandwidth);
+
+    status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_RX(0), &rate);
+    if (status < 0) {
+        return status;
+    }
+    else
+        printf("sample rate: %ld Hz, %ld/%ld, sps\n",
+               rate.integer, rate.num, rate.den);
+
+
+    status = bladerf_get_frequency(dev, BLADERF_CHANNEL_TX(1), &frequency);
+    if (status < 0) {
+        return status;
+    }
+    else
+        printf("TX(1),  frequency: %lu Hz\t", frequency);
+
+    status = bladerf_get_bandwidth(dev, BLADERF_CHANNEL_TX(1), &bandwidth);
+    if (status <  0) {
+        return status;
+    }
+    else
+        printf("BW: %u Hz,\t", bandwidth);
+
+    status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_TX(1), &rate);
+    if (status < 0) {
+        return status;
+    }
+    else
+        printf("sample rate: %ld Hz, %ld/%ld, sps\n",
+               rate.integer, rate.num, rate.den);
 
     return 0;
 }
