@@ -32,9 +32,13 @@ int main(int argc, char *argv[])
     struct bladerf *dev;
     struct bladerf_devinfo *devinfo;
     struct bladerf_version devversion;
+    const struct bladerf_range *samprange;
+    struct bladerf_rational_rate *rsamp;
+
     bladerf_frequency freq;
     bladerf_sample_rate samp;
     bladerf_bandwidth bw;
+    const struct bladerf_range *bwrange;
 
     int setdevnum = -1;
     int devcount = 0;
@@ -431,8 +435,8 @@ int main(int argc, char *argv[])
                                "1 - set freq\n"
                                "2 - set samplerate\n"
                                "3 - set bandwidth\n"
-                               "4 - set AGC"
-                               "5 - set FIR"
+                               "4 - set AGC\n"
+                               "5 - set FIR\n"
                                "0 - return menu\n\n");
 
                         scanf("%d", &setmenu);
@@ -532,25 +536,96 @@ int main(int argc, char *argv[])
                                /*
                                 * "2 - set samplerate\n"
                                 */
-                               while (setmenu != 0) {
-                                   printf("Set samplerate:\n"
-                                          "1 - RX samplerate\n"
-                                          "2 - TX samplerate\n"
-                                          "0 - exit\n"
-                                          "\n");
-                                   scanf("%d", &setmenu);
-                                   switch (setmenu) {
-                                   case 1:
-/**********/                      //"1 - RX samplerate\n"
-                                       break;
-                                   default:
-                                       printf("Error enter menu\n");
-                                       break;
-                                   }
+                                status = bladerf_get_sample_rate_range(dev,BLADERF_CHANNEL_RX(0),&samprange);
+                                if(status < 0)
+                                    printf("Samplerate range: %s\n",bladerf_strerror(status));
+                                else
+                                    printf("Samplerate range: %ld - %ldHz\n",samprange->min, samprange->max);
 
-                               }
+
+                                status = bladerf_get_sample_rate(dev,BLADERF_CHANNEL_RX(0),&samp);
+                                if(status < 0)
+                                    printf("Samplerate: %s\n",bladerf_strerror(status));
+                                else
+                                    printf("Samplerate: %u Hz\n",samp);
+
+                                printf("\n"
+                                       "Set samplerate in Hz: ");
+                                scanf("%u", &samp);
+
+                                if(samp > samprange->max)
+                                    printf("Error: Samprate > sampraterange!!!\n");
+                                else{
+                                    status = bladerf_set_sample_rate(dev,BLADERF_CHANNEL_RX(0), samp, NULL);
+                                    if(status < 0)
+                                        printf("Set samplerate: %s\n",bladerf_strerror(status));
+                                    else
+                                        printf("Set samplerate ok!\n\n");
+                                }
                             }
+                            break;
+                            case 3:{
+                                /*
+                                *set bandwidth\n"
+                                */
+                                status = bladerf_get_sample_rate(dev,BLADERF_CHANNEL_RX(0), &samp);
+                                if(status < 0)
+                                    printf("Samplerate: %s\n",bladerf_strerror(status));
+                                else
+                                    printf("Samplerate: %u Hz\n",samp);
 
+                                status = bladerf_get_bandwidth_range(dev,BLADERF_CHANNEL_RX(0),&bwrange);
+                                if(status < 0)
+                                    printf("Bandwidth range: %s\n",bladerf_strerror(status));
+                                else
+                                    printf("Bandwidth range: %ld - %ld Hz\n",bwrange->min, bwrange->max);
+
+                                status = bladerf_get_bandwidth(dev,BLADERF_CHANNEL_RX(0),&bw);
+                                if(status < 0)
+                                    printf("Bandwidth: %s\n",bladerf_strerror(status));
+                                else
+                                    printf("Bandwidth: %u Hz\n", bw);
+
+                                printf("\n"
+                                       "Set bandwidth in Hz: \n"
+                                       "1 - bw = 1/2 samplerate\n"
+                                       "2 - bw = samplerate\n"
+                                       "3 - bw enter\n\n"
+                                       "Set:");
+                                scanf("%d", &setmenu);
+                                switch (setmenu){
+                                case 1: bw = samp/2;
+                                    break;
+                                case 2: bw = samp;
+                                    break;
+                                case 3: {
+                                    printf("Enter bw:");
+                                    scanf("%u", &bw);
+                                    }
+                                    break;
+                                default:
+                                        setmenu = -1;
+                                        printf("Error enter menu!!!\n");
+                                    break;
+                                }
+
+
+                                if (bw > bwrange->max || bw > samp){
+                                    printf("Error: Bandwidth > samplerate or bandwidth > bwmax!!!\n");
+                                    printf("Samplerate = %u Hz\n", samp);
+                                }
+                                else {
+                                    status = bladerf_set_bandwidth(dev,BLADERF_CHANNEL_RX(0), bw, &bw );
+                                    if(status < 0)
+                                        printf("Set bandwidth: %s\n",bladerf_strerror(status));
+                                    else
+                                        printf("Set bandwidth ok!\n\n");
+                                }
+                                /*
+                                *"4 - set AGC"
+                                *"5 - set FIR
+                                */
+                            }
                             break;
 
 
