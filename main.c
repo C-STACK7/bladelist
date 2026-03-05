@@ -39,6 +39,10 @@ int main(int argc, char *argv[])
     bladerf_sample_rate samp;
     bladerf_bandwidth bw;
     const struct bladerf_range *bwrange;
+    bladerf_gain gain;
+    bladerf_gain_mode gainmode;
+    const struct bladerf_gain_modes *gainmodes;
+    const struct bladerf_range *gainrange;
 
     int setdevnum = -1;
     int devcount = 0;
@@ -603,6 +607,7 @@ int main(int argc, char *argv[])
                                     scanf("%u", &bw);
                                     }
                                     break;
+
                                 default:
                                         setmenu = -1;
                                         printf("Error enter menu!!!\n");
@@ -615,24 +620,59 @@ int main(int argc, char *argv[])
                                     printf("Samplerate = %u Hz\n", samp);
                                 }
                                 else {
-                                    status = bladerf_set_bandwidth(dev,BLADERF_CHANNEL_RX(0), bw, &bw );
+                                    status = bladerf_set_bandwidth(dev,BLADERF_CHANNEL_RX(0), bw, NULL);
                                     if(status < 0)
-                                        printf("Set bandwidth: %s\n",bladerf_strerror(status));
+                                        printf("Set bandwidth RX: %s\n",bladerf_strerror(status));
                                     else
-                                        printf("Set bandwidth ok!\n\n");
+                                        printf("Set bandwidth RX ok!\n");
+                                    status = bladerf_set_bandwidth(dev,BLADERF_CHANNEL_TX(0), bw, NULL );
+                                    if(status < 0)
+                                        printf("Set bandwidth TX: %s\n",bladerf_strerror(status));
+                                    else
+                                        printf("Set bandwidth TX ok!\n");
+                                    printf("\n");
                                 }
-                                /*
-                                *"4 - set AGC"
-                                *"5 - set FIR
-                                */
                             }
                             break;
+                            case 4:{
+                                /*
+                                *"4 - set AGC"
+                                */
+                                printf("\n"
+                                       "AGC gain modes:\n");
+                                status = bladerf_get_gain_modes(dev, BLADERF_CHANNEL_RX(0), &gainmodes);
+                                if (status < 0)
+                                    printf("CH RX(0) mode: %s\n",bladerf_strerror(status));
+                                else
+                                    printf("CH RX(0) mode: %s\n", gainmodes->name);
+
+                                status = bladerf_get_gain_modes(dev, BLADERF_CHANNEL_RX(1), &gainmodes);
+                                if (status < 0)
+                                    printf("CH RX(1) mode: %s\n",bladerf_strerror(status));
+                                else
+                                    printf("CH RX(1) mode: %s\n", gainmodes->name);
+
+                                printf("\n");
+                                printf("Gain range channel:\n");
+                                status = bladerf_get_gain_range(dev, BLADERF_CHANNEL_RX(0), &gainrange);
+                                if (status < 0)
+                                    printf("CH RX(0): %s\n",bladerf_strerror(status));
+                                else
+                                    printf("CH RX(0): %ld - %ld\n", gainrange->min, gainrange->max);
+
+
+
+                                /*
+                                 *"5 - set FIR
+                                 */
+                            }
 
 
                         default:
                             printf("\n Error enter num menu\n\n");
                             break;
                         }
+
 
                     }
 
