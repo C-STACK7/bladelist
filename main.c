@@ -636,21 +636,27 @@ int main(int argc, char *argv[])
                             break;
                             case 4:{
                                 /*
-                                *"4 - set AGC"
+                                *"4 - set gain"
                                 */
                                 printf("\n"
-                                       "AGC gain modes:\n");
+                                       "GAIN mode channel:\n");
                                 status = bladerf_get_gain_modes(dev, BLADERF_CHANNEL_RX(0), &gainmodes);
                                 if (status < 0)
-                                    printf("CH RX(0) mode: %s\n",bladerf_strerror(status));
-                                else
-                                    printf("CH RX(0) mode: %s\n", gainmodes->name);
+                                    printf("CH RX(0) modes: %s\n",bladerf_strerror(status));
+                                else{
+                                    while (gainmodes->name != NULL){
+                                        printf("CH RX(0) modes: %s, %d\n", gainmodes->name, gainmodes->mode);
+                                        gainmodes++;
+                                    }
+                                }
 
-                                status = bladerf_get_gain_modes(dev, BLADERF_CHANNEL_RX(1), &gainmodes);
+                                status = bladerf_get_gain_mode(dev, BLADERF_CHANNEL_RX(0), &gainmode);
                                 if (status < 0)
-                                    printf("CH RX(1) mode: %s\n",bladerf_strerror(status));
-                                else
-                                    printf("CH RX(1) mode: %s\n", gainmodes->name);
+                                    printf("CH RX(0) mode: %s\n",bladerf_strerror(status));
+                                else{
+                                    printf("CH RX(0) mode: %s\n", gainmodes->name);
+                                }
+
 
                                 printf("\n");
                                 printf("Gain range channel:\n");
@@ -660,17 +666,73 @@ int main(int argc, char *argv[])
                                 else
                                     printf("CH RX(0): %ld - %ld\n", gainrange->min, gainrange->max);
 
+                                status = bladerf_get_gain_range(dev, BLADERF_CHANNEL_RX(1), &gainrange);
+                                if (status < 0)
+                                    printf("CH RX(1): %s\n",bladerf_strerror(status));
+                                else
+                                    printf("CH RX(1): %ld - %ld\n", gainrange->min, gainrange->max);
 
+                                printf("\n"
+                                       "Set GAIN mode:\n"
+                                       "1 - GAIN automatic default\n"
+                                       "2 - GAIN automatic fast attack (advanced)\n"
+                                       "3 - GAIN automatic hybrid attack (advanced)\n"
+                                       "4 - GAIN manual\n"
+                                       "Set : ");
+                                scanf("%d", &setmenu);
+                                switch (setmenu) {
+                                case 1:{
+                                    status = bladerf_set_gain_mode(dev, BLADERF_CHANNEL_RX(0), BLADERF_GAIN_SLOWATTACK_AGC);
+                                    if (status < 0)
+                                        printf("Set GAIN: %s\n",bladerf_strerror(status));
+                                    else
+                                        printf("Set GAIN: automatic default ok!\n");
+                                }
+                                break;
+                                case 2:{
+                                    status = bladerf_set_gain_mode(dev, BLADERF_CHANNEL_RX(0), BLADERF_GAIN_FASTATTACK_AGC);
+                                    if (status < 0)
+                                        printf("Set GAIN: %s\n",bladerf_strerror(status));
+                                    else
+                                        printf("Set GAIN: FASTATTACK AGC ok!\n");
+                                }
+                                break;
 
+                                case 3:{
+                                    status = bladerf_set_gain_mode(dev, BLADERF_CHANNEL_RX(0), BLADERF_GAIN_HYBRID_AGC);
+                                    if (status < 0)
+                                        printf("Set GAIN: %s\n",bladerf_strerror(status));
+                                    else
+                                        printf("Set GAIN: SLOWATTACK_AGC ok!\n");
+                                }
+                                break;
+
+                                case 4:{
+                                    status = bladerf_set_gain_mode(dev, BLADERF_CHANNEL_RX(0), BLADERF_GAIN_MGC);
+                                    if (status < 0)
+                                        printf("Set GAIN: %s\n",bladerf_strerror(status));
+                                    else{
+                                        printf("Set GAIN: MANUAL ok!\n");
+                                        printf("Set GAIN: ");
+                                        scanf("%d", &gain);
+                                        status = bladerf_set_gain(dev,BLADERF_CHANNEL_RX(0), gain);
+                                        if (status < 0)
+                                            printf("Set manual: %s\n",bladerf_strerror(status));
+                                        else
+                                            printf("Set GAIN manual ok!!!\n\n");
+                                    }
+                                }
+                                break;
+                                default:
+                                    break;
+                                }
+
+                                setmenu = -1;
                                 /*
                                  *"5 - set FIR
                                  */
                             }
 
-
-                        default:
-                            printf("\n Error enter num menu\n\n");
-                            break;
                         }
 
 
