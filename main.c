@@ -25,53 +25,54 @@ const char *channel2str(bladerf_channel);
 char const *_txfir_to_str(bladerf_rfic_txfir);
 char const *_rxfir_to_str(bladerf_rfic_rxfir);
 
+struct bladerf *dev;
+struct bladerf_devinfo *devinfo;
+struct bladerf_version devversion;
+const struct bladerf_range *samprange;
+struct bladerf_rational_rate *rsamp;
+
+bladerf_frequency freq;
+bladerf_sample_rate samp;
+bladerf_bandwidth bw;
+const struct bladerf_range *bwrange;
+bladerf_gain gain;
+bladerf_gain_mode gainmode;
+const struct bladerf_gain_modes *gainmodes;
+const struct bladerf_range *gainrange;
+
+int setdevnum = -1;
+int devcount = 0;
+
+
+uint16_t dac_trim;
+bladerf_fpga_source devfpgasrc;
+bladerf_fpga_size fpga_size = 0;
+uint32_t flash_size = 1;
+bool is_guess;
+
+bladerf_channel ch = BLADERF_CHANNEL_INVALID;
+const struct bladerf_range *freqrange;
+
+float rfic_temperature = 0.0;
+bladerf_power_sources power_source;
+bladerf_clock_select clock_select;
+int devspeed = -1;
+uint16_t pmicconf = 0;       /**< Configuration register (uint16_t) */
+float pmicvshunt = 0.0;     /**< Shunt voltage (float) */
+float pmicvbus = 0.0;       /**< Bus voltage (float) */
+float pmicpower = 0.0;      /**< Load power (float) */
+float pmiccurrent = 0.0;    /**< Load current (float) */
+uint16_t pmiccal = 0.0;
+
+
+bladerf_rf_switch_config config;
+bladerf_tuning_mode modetuning;
+bladerf_gain_mode modegain= BLADERF_GAIN_DEFAULT;
 
 int main(int argc, char *argv[])
 {
     int status = 0;
-    struct bladerf *dev;
-    struct bladerf_devinfo *devinfo;
-    struct bladerf_version devversion;
-    const struct bladerf_range *samprange;
-    struct bladerf_rational_rate *rsamp;
 
-    bladerf_frequency freq;
-    bladerf_sample_rate samp;
-    bladerf_bandwidth bw;
-    const struct bladerf_range *bwrange;
-    bladerf_gain gain;
-    bladerf_gain_mode gainmode;
-    const struct bladerf_gain_modes *gainmodes;
-    const struct bladerf_range *gainrange;
-
-    int setdevnum = -1;
-    int devcount = 0;
-
-
-    uint16_t dac_trim;
-    bladerf_fpga_source devfpgasrc;
-    bladerf_fpga_size fpga_size = 0;
-    uint32_t flash_size = 1;
-    bool is_guess;
-
-    bladerf_channel ch = BLADERF_CHANNEL_INVALID;
-    const struct bladerf_range *freqrange;
-
-    float rfic_temperature = 0.0;
-    bladerf_power_sources power_source;
-    bladerf_clock_select clock_select;
-    int devspeed = -1;
-    uint16_t pmicconf = 0;       /**< Configuration register (uint16_t) */
-    float pmicvshunt = 0.0;     /**< Shunt voltage (float) */
-    float pmicvbus = 0.0;       /**< Bus voltage (float) */
-    float pmicpower = 0.0;      /**< Load power (float) */
-    float pmiccurrent = 0.0;    /**< Load current (float) */
-    uint16_t pmiccal = 0.0;
-
-
-    bladerf_rf_switch_config config;
-    bladerf_tuning_mode modetuning;
-    bladerf_gain_mode modegain= BLADERF_GAIN_DEFAULT;
 
     const char *mux_str;
     bladerf_rx_mux mux_setting;
@@ -466,7 +467,7 @@ int main(int argc, char *argv[])
 
 
                                 while (setmenu != 0) {
-                                    printf("1 - set frequency rx\n"
+                                    printf("Frequency channel:1 - set frequency rx\n"
                                            "2 - set frequency tx\n"
                                            "0 - exit\n");
                                     scanf("%d", &setmenu);
@@ -500,7 +501,7 @@ int main(int argc, char *argv[])
                                             }
                                         }
                                         break;
-                                    case 2:
+                                    case 2:{
                                         /*"2 - set frequency tx\n"*/
                                         status = bladerf_get_frequency_range(dev, ch, &freqrange);
                                         if (status < 0)
@@ -527,7 +528,7 @@ int main(int argc, char *argv[])
 
                                             }
                                         }
-
+                                    }
                                         break;
                                     default:
                                         printf("Error enter menu!!!\n");
@@ -639,13 +640,13 @@ int main(int argc, char *argv[])
                                 *"4 - set gain"
                                 */
                                 printf("\n"
-                                       "GAIN mode channel:\n");
+                                       "GAIN list AGC mode channels RX:\n");
                                 status = bladerf_get_gain_modes(dev, BLADERF_CHANNEL_RX(0), &gainmodes);
                                 if (status < 0)
                                     printf("CH RX(0) modes: %s\n",bladerf_strerror(status));
                                 else{
                                     while (gainmodes->name != NULL){
-                                        printf("CH RX(0) modes: %s, %d\n", gainmodes->name, gainmodes->mode);
+                                        printf("CH RX(0) modes: %s\n", gainmodes->name);
                                         gainmodes++;
                                     }
                                 }
@@ -659,7 +660,7 @@ int main(int argc, char *argv[])
 
 
                                 printf("\n");
-                                printf("Gain range channel:\n");
+                                printf("Manual gain range channel:\n");
                                 status = bladerf_get_gain_range(dev, BLADERF_CHANNEL_RX(0), &gainrange);
                                 if (status < 0)
                                     printf("CH RX(0): %s\n",bladerf_strerror(status));
@@ -824,6 +825,21 @@ static int print_device_radio(struct bladerf *dev)
     else
         printf("BW: %u Hz,\t", bandwidth);
 
+
+    status = bladerf_get_gain_mode(dev, BLADERF_CHANNEL_RX(0), &modegain);
+    if (status < 0)
+        printf("No get mode AGC: %s",bladerf_strerror(status));
+    else
+        printf("  %s AGC: %-10s", channel2str(BLADERF_CHANNEL_RX(0)),
+               modegain == BLADERF_GAIN_MANUAL ? "Disabled" : "Enabled");
+
+
+    status = bladerf_get_gain(dev, BLADERF_CHANNEL_RX(0), &gain);
+    if (status < 0)
+        printf("gain: %s, ",bladerf_strerror(status));
+    else
+        printf("gain: %d, ",gain);
+
     status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_RX(0), &rate);
     if (status < 0) {
         return status;
@@ -846,6 +862,21 @@ static int print_device_radio(struct bladerf *dev)
     }
     else
         printf("BW: %u Hz,\t", bandwidth);
+
+
+    status = bladerf_get_gain_mode(dev, BLADERF_CHANNEL_RX(1), &modegain);
+    if (status < 0)
+        printf("No get mode AGC: %s",bladerf_strerror(status));
+    else
+        printf("  %s AGC: %-10s", channel2str(BLADERF_CHANNEL_RX(0)),
+               modegain == BLADERF_GAIN_MANUAL ? "Disabled" : "Enabled");
+
+
+    status = bladerf_get_gain(dev, BLADERF_CHANNEL_RX(1), &gain);
+    if (status < 0)
+        printf("gain: %s, ",bladerf_strerror(status));
+    else
+        printf("gain: %d, ",gain);
 
     status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_RX(1), &rate);
     if (status < 0) {
@@ -871,7 +902,14 @@ static int print_device_radio(struct bladerf *dev)
     else
         printf("BW: %u Hz,\t", bandwidth);
 
-    status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_RX(0), &rate);
+
+    status = bladerf_get_gain(dev, BLADERF_CHANNEL_TX(0), &gain);
+    if (status < 0)
+        printf("gain: %s, ",bladerf_strerror(status));
+    else
+        printf("gain: %d, ",gain);
+
+    status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_TX(0), &rate);
     if (status < 0) {
         return status;
     }
@@ -894,6 +932,12 @@ static int print_device_radio(struct bladerf *dev)
     else
         printf("BW: %u Hz,\t", bandwidth);
 
+    status = bladerf_get_gain(dev, BLADERF_CHANNEL_TX(1), &gain);
+    if (status < 0)
+        printf("gain: %s, ",bladerf_strerror(status));
+    else
+        printf("gain: %d, ",gain);
+
     status = bladerf_get_rational_sample_rate(dev, BLADERF_CHANNEL_TX(1), &rate);
     if (status < 0) {
         return status;
@@ -901,6 +945,8 @@ static int print_device_radio(struct bladerf *dev)
     else
         printf("sample rate: %ld Hz, %ld/%ld, sps\n",
                rate.integer, rate.num, rate.den);
+
+
 
     return 0;
 }
