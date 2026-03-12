@@ -270,13 +270,6 @@ int main(int argc, char *argv[])
                                 if (clock_select == CLOCK_SELECT_EXTERNAL) printf("Clock select::\t\tEXTERNAL\n");
                             }
 
-                            /**< Configuration register (uint16_t) */
-                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_CONFIGURATION, &pmicconf);
-                            if(status < 0)
-                                printf("PMIC config :\tERROR READ %s\n",bladerf_strerror(status));
-                            else
-                                printf("PMIC config :\t%#X\n",pmicconf);
-
                             /**< Shunt voltage (float) */
                             status = bladerf_get_pmic_register(dev, BLADERF_PMIC_VOLTAGE_SHUNT, &pmicvshunt);
                             if(status < 0)
@@ -304,13 +297,6 @@ int main(int argc, char *argv[])
                                 printf("PMIC current :\t\tERROR READ %s\n",bladerf_strerror(status));
                             else
                                 printf("PMIC current :\t\t%.2f A\n",pmiccurrent);
-
-                            /**< Calibration (uint16_t) */
-                            status = bladerf_get_pmic_register(dev, BLADERF_PMIC_CALIBRATION, &pmiccal);
-                            if(status < 0)
-                                printf("PMIC cal :\tERROR READ %s\n",bladerf_strerror(status));
-                            else
-                                printf("PMIC cal :\t%u\n", pmiccal);
 
                         }
                         break;
@@ -467,7 +453,8 @@ int main(int argc, char *argv[])
 
 
                                 while (setmenu != 0) {
-                                    printf("Frequency channel:1 - set frequency rx\n"
+                                    printf("Frequency channel:\n"
+                                           "1 - set frequency rx\n"
                                            "2 - set frequency tx\n"
                                            "0 - exit\n");
                                     scanf("%d", &setmenu);
@@ -719,8 +706,11 @@ int main(int argc, char *argv[])
                                         status = bladerf_set_gain(dev,BLADERF_CHANNEL_RX(0), gain);
                                         if (status < 0)
                                             printf("Set manual: %s\n",bladerf_strerror(status));
-                                        else
-                                            printf("Set GAIN manual ok!!!\n\n");
+                                        else{
+                                            printf("Set GAIN manual ok!!!\n");
+                                            printf("Note: This change will not be visible until the channel is enabled"
+                                                   "\n\n");
+                                        }
                                     }
                                 }
                                 break;
@@ -868,7 +858,7 @@ static int print_device_radio(struct bladerf *dev)
     if (status < 0)
         printf("No get mode AGC: %s",bladerf_strerror(status));
     else
-        printf("  %s AGC: %-10s", channel2str(BLADERF_CHANNEL_RX(0)),
+        printf("  %s AGC: %-10s", channel2str(BLADERF_CHANNEL_RX(1)),
                modegain == BLADERF_GAIN_MANUAL ? "Disabled" : "Enabled");
 
 
