@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
                                     scanf("%d", &setmenu);
 
                                     switch (setmenu) {
-                                    case 1:
+                                    case 1:{
                                         /*"1 - set frequency rx\n"*/
                                         status = bladerf_get_frequency_range(dev, ch, &freqrange);
                                         if (status < 0)
@@ -487,6 +487,7 @@ int main(int argc, char *argv[])
 
                                             }
                                         }
+                                    }
                                         break;
                                     case 2:{
                                         /*"2 - set frequency tx\n"*/
@@ -715,13 +716,44 @@ int main(int argc, char *argv[])
                                 }
                                 break;
                                 default:
+                                    setmenu = -1;
                                     break;
                                 }
 
-                                setmenu = -1;
-                                /*
-                                 *"5 - set FIR
-                                 */
+                            case 5:{
+                                printf("Info FIR filter:"
+                                       "\n");
+
+                                    status = bladerf_get_rfic_rx_fir(dev, &rxfir);
+                                if (status < 0)
+                                    printf("RX FIR Filter: %s\n",bladerf_strerror(status));
+                                else
+                                        printf("RX FIR Filter: %s%s\n", _rxfir_to_str(rxfir),
+                                               (BLADERF_RFIC_RXFIR_DEFAULT == rxfir) ? " (default)" : "");
+
+                                if (status < 0)
+                                    printf("TX FIR Filter: %s\n",bladerf_strerror(status));
+                                else{
+                                    status = bladerf_get_rfic_tx_fir(dev, &txfir);
+                                    if (status >= 0)
+                                        printf("TX FIR Filter: %s%s\n", _txfir_to_str(txfir),
+                                               (BLADERF_RFIC_TXFIR_DEFAULT == txfir) ? " (default)" : "");
+
+                                printf("Please set channel:\n"
+                                           "<1> - RX\n"
+                                           "<2> - TX\n");
+                                scanf("%d", &setmenu);
+                                switch (setmenu) {
+                                case 1:
+
+                                    break;
+                                default:
+                                    break;
+                                }
+
+                            }
+                            break;
+
                             }
 
                         }
