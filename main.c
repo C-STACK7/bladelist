@@ -719,7 +719,7 @@ int main(int argc, char *argv[])
                                     setmenu = -1;
                                     break;
                                 }
-
+                            }
                             case 5:{
                                 printf("Info FIR filter:"
                                        "\n");
@@ -744,11 +744,66 @@ int main(int argc, char *argv[])
                                            "<2> - TX\n");
                                 scanf("%d", &setmenu);
                                 switch (setmenu) {
-                                case 1:
+                                    case 1:
+                                        printf("RFIC RX FIR filter choices:\n"
+                                                "1 - No filter\n"
+                                                "2 - Custom FIR filter (currently unused)\n"
+                                                "3 - Decimate by 1 (default)\n"
+                                                "4 - Decimate by 2\n"
+                                                "5 - Decimate by 4\n"
+                                               );
+                                        scanf("%d", &setmenu);
+                                        switch(setmenu){
+                                            case 1:
+                                                status = bladerf_set_rfic_rx_fir(dev,BLADERF_RFIC_RXFIR_BYPASS);
+                                                if (status < 0)
+                                                    printf("RX FIR Filter: %s\n",bladerf_strerror(status));
+                                                else
+                                                    printf("RX FIR Filter: %s\n",_rxfir_to_str(BLADERF_RFIC_RXFIR_BYPASS));
+                                                break;
+                                            case 2:
+                                                status = bladerf_set_rfic_rx_fir(dev,BLADERF_RFIC_RXFIR_CUSTOM);
+                                                if (status < 0)
+                                                    printf("RX FIR Filter: %s\n",bladerf_strerror(status));
+                                                else
+                                                    printf("RX FIR Filter: %s\n",_rxfir_to_str(BLADERF_RFIC_RXFIR_CUSTOM));
+                                                break;
+                                            case 3:
+                                                status = bladerf_set_rfic_rx_fir(dev,BLADERF_RFIC_RXFIR_DEC1);
+                                                if (status < 0)
+                                                    printf("RX FIR Filter: %s\n",bladerf_strerror(status));
+                                                else
+                                                    printf("RX FIR Filter: %s\n",_rxfir_to_str(BLADERF_RFIC_RXFIR_DEC1));
+                                                break;
+                                            case 4:
+                                                status = bladerf_set_rfic_rx_fir(dev,BLADERF_RFIC_RXFIR_DEC2);
+                                                if (status < 0)
+                                                    printf("RX FIR Filter: %s\n",bladerf_strerror(status));
+                                                else
+                                                    printf("RX FIR Filter: %s\n",_rxfir_to_str(BLADERF_RFIC_RXFIR_DEC2));
+                                                break;
+                                            case 5:
+                                                status = bladerf_set_rfic_rx_fir(dev,BLADERF_RFIC_RXFIR_DEC4);
+                                                if (status < 0)
+                                                    printf("RX FIR Filter: %s\n",bladerf_strerror(status));
+                                                else
+                                                    printf("RX FIR Filter: %s\n",_rxfir_to_str(BLADERF_RFIC_RXFIR_DEC4));
+                                                break;
+                                            default:
+                                                setmenu = -1;
+                                                break;
 
-                                    break;
-                                default:
-                                    break;
+                                        }
+
+                                        break;
+
+                                    case 2:
+
+                                        break;
+
+                                    default:
+                                        setmenu = -1;
+                                        break;
                                 }
 
                             }
@@ -972,7 +1027,6 @@ static int print_device_radio(struct bladerf *dev)
 
     return 0;
 }
-
 
 static char const *_rfic_rx_portstr(uint32_t port)
 {
